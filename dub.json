@@ -1,0 +1,9 @@
+{
+	"name": "rintaroemulator",
+	"authors": [
+		"SilentObserver"
+	],
+	"description": "An emulator for RCPU",
+	"copyright": "Copyright © 2017, SilentObserver",
+	"license": "MIT"
+}
