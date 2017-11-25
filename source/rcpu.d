@@ -34,12 +34,12 @@ public:
         Instruction instr = decodeInstruction(opcode);
         final switch (instr.type) {
             case InstructionType.a: executeAType(instr); break;
-            case InstructionType.j: break;
-            case InstructionType.i: break;
-            case InstructionType.si: break;
-            case InstructionType.f: break;
-            case InstructionType.ls: break;
-            case InstructionType.sp: break;
+            case InstructionType.j: executeJType(instr); break;
+            case InstructionType.i: executeIType(instr); break;
+            case InstructionType.si: executeSIType(instr); break;
+            case InstructionType.f: executeFType(instr); break;
+            case InstructionType.ls: executeLSType(instr); break;
+            case InstructionType.sp: executeSPType(instr); break;
         }
     }
 private:
