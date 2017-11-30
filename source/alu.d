@@ -21,13 +21,12 @@ public:
         else 
             assert(a <= ushort.max, ": a = " ~ a.to!string);
         assert(b >= 0 && b <= ushort.max, ": b = " ~ b.to!string);
-        assert(flags !is null, ": flags is null");
         assert(functionCode >= 0 && functionCode <= 15, ": functionCode = " ~ functionCode.to!string);
     } out (result) {
         assert (result >= 0 && result <= uint.max, ": res = " ~ result.to!string);
     } body {
         uint result = 0;
-        FlagRegister newFlags = new FlagRegister;
+        FlagRegister newFlags = FlagRegister();
         newFlags.value = 0;
         switch (functionCode) {
             case 0: result = a + b; 
@@ -35,7 +34,7 @@ public:
                         newFlags.c = ((a >> 31) || (b >> 31)) && !(result >> 31);
                         result &= uint.max;
                     } else {
-                        newFlags.c = cast(bool) (result >> 15);
+                        newFlags.c = cast(bool) (result >> 16);
                         result &= ushort.max;
                     } 
                     newFlags.v = ((a >> 15) == (b >> 15)) && ((a >> 15) != (result >> 15)); 
@@ -45,27 +44,29 @@ public:
                         newFlags.c = ((a >> 31) || (b >> 31)) && !(result >> 31);
                         result &= uint.max;
                     } else {
-                        newFlags.c = cast(bool) (result >> 15);
+                        newFlags.c = cast(bool) (result >> 16);
                         result &= ushort.max;
                     } 
                     newFlags.v = ((a >> 15) == (b >> 15)) && ((a >> 15) != (result >> 15)); 
                     break;
-            case 2: result = a - b;
+            case 2: result = a + ~cast(uint)b + 1;
                     if (use32bits) {
-                        newFlags.c = !(((a >> 31) || (b >> 31)) && !(result >> 31));
+                        newFlags.c = ((a >> 31) || (b >> 31)) && !(result >> 31);
                         result &= uint.max;
                     } else {
-                        newFlags.c = !(result >> 15);
+                        //import std.stdio;
+                        //debug writefln("%08X + %08X = %08X", a, (~cast(uint)b + 1), result);
+                        newFlags.c = cast(bool) (result >> 16);
                         result &= ushort.max;
                     } 
                     newFlags.v = ((a >> 15) == (-b >> 15)) && ((a >> 15) != (result >> 15)); 
                     break;
-            case 3: result = a - b - flags.c;
+            case 3: result = a + ~cast(uint)b + cast(uint)flags.c;
                     if (use32bits) {
-                        newFlags.c = !(((a >> 31) || (b >> 31)) && !(result >> 31));
+                        newFlags.c = ((a >> 31) || (b >> 31)) && !(result >> 31);
                         result &= uint.max;
                     } else {
-                        newFlags.c = !(result >> 15);
+                        newFlags.c = cast(bool) (result >> 16);
                         result &= ushort.max;
                     } 
                     newFlags.v = ((a >> 15) == (-b >> 15)) && ((a >> 15) != (result >> 15)); 
@@ -92,6 +93,8 @@ public:
         }
         newFlags.z = result == 0;
         newFlags.n = cast(bool) (((result >> 16) == 0) ? result >> 15 : result >> 31);
+        //import std.stdio;
+        //debug writeln(result, newFlags.n);
         if (setFlags) flags.value = newFlags.value;
         return result;
     }
@@ -99,14 +102,16 @@ public:
 
 unittest
 {
+    import std.stdio;
     ALU alu = new ALU;
-    auto flags = new FlagRegister;
+    auto flags = FlagRegister();
     assert(alu.calculate(1, 2, flags, 0) == 3 && flags.value == 0);
     flags.value = 8;
     assert(alu.calculate(1, 2, flags, 1) == 4 && flags.value == 0);
-    assert(alu.calculate(1, 2, flags, 2) == ((~1 + 1) & ushort.max) && flags.value == 4);
-    flags.value = 8;
-    assert(alu.calculate(1, 2, flags, 3) == ((~2 + 1) & ushort.max) && flags.value == 4);
+    assert(alu.calculate(1, 2, flags, 2) == ((~1 + 1) & ushort.max) && flags.value == 12);
+    flags.value = 0;
+    //writeln(alu.calculate(1, 2, flags, 3));
+    assert(alu.calculate(1, 2, flags, 3) == ((~2 + 1) & ushort.max) && flags.value == 12);
     assert(alu.calculate(1, 2, flags, 4) == 2 && flags.value == 0);
     assert(alu.calculate(1, 2, flags, 5) == 2 && flags.value == 0);
     assert(alu.calculate((~1+1)&ushort.max, 2, flags, 4) == ((~2+1)&uint.max) && flags.value == 4);

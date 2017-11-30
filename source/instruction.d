@@ -53,7 +53,7 @@ public Instruction decodeInstruction (ushort instr) pure {
         result.opcode = cast(ubyte) instr.getBit(7);
         result.a2 = instr.getBits(0, 7);
     } else if (instr.getBits(12, 16) == 0b0011) {
-        result.type = InstructionType.ls;
+        result.type = InstructionType.sp;
         result.a1 = instr.getBits(9, 12);
         result.opcode = cast(ubyte) instr.getBits(7, 9);
     } else throw new InvalidInstructionException(instr);
@@ -99,8 +99,8 @@ public Instruction decodeInstruction (ushort instr) pure {
     assert(instr.a1 == 0b101);
     assert(instr.a2 == 0b00011100);
 
-    instr = decodeInstruction(0b0011_100_00_0000000);
-    assert(instr.type == InstructionType.ls);
-    assert(instr.opcode == 0b00);
+    instr = decodeInstruction(0b0011_100_01_0000000);
+    assert(instr.type == InstructionType.sp);
+    assert(instr.opcode == 0b01);
     assert(instr.a1 == 0b100);
 }

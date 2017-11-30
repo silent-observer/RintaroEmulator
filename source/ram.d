@@ -1,4 +1,4 @@
-
+import std.stdio;
 
 enum romSize = 1024;
 enum stackSize = 1024;
@@ -6,7 +6,7 @@ enum heapSize = 4096;
 /**
  * RAM
  */
-class RAM
+class RAM(bool log = false)
 {
 private:
     ushort[romSize] rom; 
@@ -38,6 +38,8 @@ public:
     }
     void memWrite (uint addr, ushort value) {
         import mybitconverter;
+        static if (log)
+            writefln("*%08X <- %04X", addr, value);
         if (addr >= 0x00000000 && addr <= 0x000FFFFF) return; // ROM
         else if (addr >= 0xD0000000 && addr <= 0xD000FFFF) { // Stack
             stack[addr%stackSize] = value;
@@ -82,17 +84,21 @@ public:
     }
 
     ushort memRead (uint addr) {
-        if (addr >= 0x00000000 && addr <= 0x000FFFFF) return rom[addr%romSize]; // ROM
-        else if (addr >= 0xD0000000 && addr <= 0xD000FFFF) return stack[addr%stackSize]; // Stack
-        else if (addr >= 0x10000000 && addr <= 0x8FFFFFFF) return heap[addr%heapSize]; // Heap
-        else if (addr >= 0xFFFF1000 && addr <= 0xFFFF107F) return fastMem[addr%128]; // Fast memory
-        else return 0;
+        ushort value = 0;
+        if (addr >= 0x00000000 && addr <= 0x000FFFFF) value = rom[addr%romSize]; // ROM
+        else if (addr >= 0xD0000000 && addr <= 0xD000FFFF) value = stack[addr%stackSize]; // Stack
+        else if (addr >= 0x10000000 && addr <= 0x8FFFFFFF) value = heap[addr%heapSize]; // Heap
+        else if (addr >= 0xFFFF1000 && addr <= 0xFFFF107F) value = fastMem[addr%128]; // Fast memory
+
+        static if (log)
+            writefln("*%08X -> %04X", addr, value);
+
+        return value;
     }
 } unittest
 {
     import std.format : format;
-    import std.stdio;
-    RAM ram = new RAM("main.mif");
+    auto ram = new RAM!false("main.mif");
     assert(ram.memRead(0) == 0x0805);
     assert(ram.memRead(1) == 0x0001);
     assert(ram.memRead(2) == 0xFFFF);

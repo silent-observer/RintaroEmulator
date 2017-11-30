@@ -4,7 +4,7 @@ import mybitconverter;
 /**
  * Register
  */
-class Register(size_t size)
+struct Register(size_t size)
 if (size == 16 || size == 32 || size == 4) {
 
     static if (size == 32) alias T = uint;
@@ -20,9 +20,6 @@ private:
         
     }
 public:
-    this() pure {
-        _value = 0;
-    }
     this(T value) pure {
         this._value = value;
     }
@@ -56,7 +53,6 @@ public:
     bool opEquals(T rhs) pure {
         return value == rhs;
     }
-    alias opEquals = Object.opEquals;
 
     alias value this;
 }
@@ -64,12 +60,9 @@ public:
 /**
  * FlagRegister
  */
-class FlagRegister : Register!4
+struct FlagRegister
 {
-    this() pure
-    {
-        super();
-    }
+    Register!4 reg;
     @property bool c() pure const {
         return value.getBit(3);
     } 
@@ -94,11 +87,12 @@ class FlagRegister : Register!4
     @property void v(in bool arg) pure {
         value = value.setBitNoRef(0, arg);
     }
+    alias reg this;
 }
 
 unittest
 {
-    auto r1 = new Register!16;
+    auto r1 = Register!16();
     assert(r1 == 0);
     r1 = cast(ushort) 1234;
     assert(r1 == 1234);
@@ -106,13 +100,13 @@ unittest
     assert(r1 == 0);
     r1 = cast(ushort) 65540;
     assert(r1 == 4);
-    auto r2 = new Register!4;
+    auto r2 = Register!4();
     foreach (ushort i; 0..100) {
         r2 = i;
         assert(r2 == (i & 15));
     }
     assert(r1 == 4);
-    FlagRegister r3 = new FlagRegister;
+    FlagRegister r3 = FlagRegister();
     assert(r3 == 0  && !r3.c && !r3.n && !r3.z && !r3.v);
     r3.c = 1;
     assert(r3 == 8  &&  r3.c && !r3.n && !r3.z && !r3.v);
