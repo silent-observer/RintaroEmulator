@@ -1,4 +1,5 @@
 import std.stdio;
+import std.format : format;
 
 enum romSize = 1024;
 enum stackSize = 1024;
@@ -6,13 +7,18 @@ enum heapSize = 4096;
 /**
  * RAM
  */
-class RAM(bool log = false)
+
+alias LogCallback = void function(string);
+
+class RAM
 {
 private:
     ushort[romSize] rom; 
     ushort[stackSize] stack;
     ushort[heapSize] heap;
     ushort[128] fastMem;
+
+    string[romSize] romComments; 
 
     void delegate (ushort) lcdDataWrite;
     void delegate (ushort) lcdCtrlWrite;
@@ -21,25 +27,32 @@ private:
     bool keyboardEn, irEn, bp0En, bp1En, bp2En, bp3En;
     uint bp0Addr, bp1Addr, bp2Addr, bp3Addr;
 
+    LogCallback log;
+
 
 public:
-    this(string filename)
+    this(string filename, LogCallback log)
     {
         import std.file;
         import std.string;
         import std.conv;
+        this.log = log;
         string text = readText(filename);
         auto index = text.indexOf("000:");
         foreach(line; text[index..$].splitLines) {
+            if (line[0..2] == "--") continue;
             auto addr = line.parse!uint(16);
-            foreach(word; line[2..$].split[0..$-1])
+            auto spl = line[2..$].split("--");
+            auto comments = spl[1..$].join("--");
+            foreach(word; spl[0].split[0..$-1]) {
+                romComments[addr] = comments;
                 rom[addr++] = word.to!ushort(16);
+            }
         }
     }
     void memWrite (uint addr, ushort value) {
         import mybitconverter;
-        static if (log)
-            writefln("*%08X <- %04X", addr, value);
+        log(format("*%08X <- %04X", addr, value));
         if (addr >= 0x00000000 && addr <= 0x000FFFFF) return; // ROM
         else if (addr >= 0xD0000000 && addr <= 0xD000FFFF) { // Stack
             stack[addr%stackSize] = value;
@@ -90,15 +103,18 @@ public:
         else if (addr >= 0x10000000 && addr <= 0x8FFFFFFF) value = heap[addr%heapSize]; // Heap
         else if (addr >= 0xFFFF1000 && addr <= 0xFFFF107F) value = fastMem[addr%128]; // Fast memory
 
-        static if (log)
-            writefln("*%08X -> %04X", addr, value);
+        log(format("*%08X -> %04X", addr, value));
 
         return value;
+    }
+
+    string getComments(uint addr) {
+        return romComments[addr%romSize];
     }
 } unittest
 {
     import std.format : format;
-    auto ram = new RAM!false("main.mif");
+    auto ram = new RAM("main.mif", function void(string) {return;});
     assert(ram.memRead(0) == 0x0805);
     assert(ram.memRead(1) == 0x0001);
     assert(ram.memRead(2) == 0xFFFF);

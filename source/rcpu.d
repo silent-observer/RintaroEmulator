@@ -4,12 +4,15 @@ import alu;
 import register;
 import instruction;
 import mybitconverter;
+import ram;
 
 import std.stdio;
 /**
  * RCPU
  */
-class RCPU(bool log = false)
+alias LogCallback = void function(string);
+
+class RCPU
 {
 public:
     Register!16 a;
@@ -20,24 +23,21 @@ public:
     Register!32 pc;
     FlagRegister f;
     ALU alu;
-    this () pure
+    this (LogCallback log) pure
     {
+        this.log = log;
         initialize();
     }
-    void setMemWrite(void delegate (uint, ushort) arg) pure {
-        memWrite = arg;
-    }
-    void setMemRead(ushort delegate (uint) arg) pure {
-        memRead = arg;
+    void setRAM(RAM ram) pure {
+        this.ram = ram;
     }
 
     void executeInstruction() {
-        //static if (log)
-        //    writefln("PC: %08X, A: %04X, B: %04X, C: %04X, SP: %04X, FP: %04X, F: %04b", 
-        //        pc.value, a.value, b.value, c.value, sp.value, fp.value, f.value);
-        auto opcode = memRead(pc++);
+        import std.format : format;
+        log(reportState);
+        auto opcode = ram.memRead(pc++);
         Instruction instr = decodeInstruction(opcode);
-            writeln(instr);
+        log(format("%s -- %s", instr, ram.getComments(pc-1)));
         final switch (instr.type) {
             case InstructionType.a: executeAType(instr); break;
             case InstructionType.j: executeJType(instr); break;
@@ -47,6 +47,13 @@ public:
             case InstructionType.ls: executeLSType(instr); break;
             case InstructionType.sp: executeSPType(instr); break;
         }
+        log(reportState);
+    }
+
+    string reportState() {
+        import std.format : format;
+        return format("PC: %08X, A: %04X, B: %04X, C: %04X, SP: %04X, FP: %04X, F: %04b", 
+                    pc.value, a.value, b.value, c.value, sp.value, fp.value, f.value);
     }
 private:
     void initialize() pure {
@@ -60,8 +67,8 @@ private:
         alu = new ALU;
     }
 
-    void delegate (uint, ushort) memWrite;
-    ushort delegate (uint) memRead;
+    LogCallback log;
+    RAM ram;
 
     ushort getValue(ushort addrMode) {
         switch (addrMode) {
@@ -69,16 +76,16 @@ private:
             case 1: return a;
             case 2: return b;
             case 3: return c;
-            case 4: return memRead(pc++);
+            case 4: return ram.memRead(pc++);
             case 5: {
-                uint addr = memRead(pc++) << 16;
-                addr |= memRead(pc++);
-                return memRead(addr);
+                uint addr = ram.memRead(pc++) << 16;
+                addr |= ram.memRead(pc++);
+                return ram.memRead(addr);
             }
-            case 6: return memRead(a);
+            case 6: return ram.memRead(a);
             case 7: {
-                uint addr = 0xD0000000 | ((fp + memRead(pc++)) & 0xFFFF);
-                return memRead(addr);
+                uint addr = 0xD0000000 | ((fp + ram.memRead(pc++)) & 0xFFFF);
+                return ram.memRead(addr);
             }
             default: throw new InvalidAddrModeException(addrMode, pc);
         }
@@ -92,15 +99,15 @@ private:
             case 3: c = value; break;
             case 4: break;
             case 5: {
-                uint addr = memRead(pc++) << 16;
-                addr |= memRead(pc++);
-                memWrite(addr, value);
+                uint addr = ram.memRead(pc++) << 16;
+                addr |= ram.memRead(pc++);
+                ram.memWrite(addr, value);
                 break;
             }
-            case 6: memWrite(a, value); break;
+            case 6: ram.memWrite(a, value); break;
             case 7: {
-                uint addr = 0xD0000000 | ((fp + memRead(pc++)) & 0xFFFF);
-                memWrite(addr, value);
+                uint addr = 0xD0000000 | ((fp + ram.memRead(pc++)) & 0xFFFF);
+                ram.memWrite(addr, value);
                 break;
             }
             default: throw new InvalidAddrModeException(addrMode, pc);
@@ -112,7 +119,6 @@ private:
         ushort a2 = getValue(instr.a2);
         bool isNOP = instr.a1 == 0 && instr.a2 == 0 && instr.a3 == 0 && instr.opcode == 0;
         uint result = alu.calculate(a1, a2, f, instr.opcode, !isNOP, false);
-        //writefln("%04X - %04X = %04X", a1, a2, result);
         setValue(instr.a3, cast(ushort) (result & 0xFFFF));
         if (instr.opcode == 4) // MUL instruction
             a = cast(ushort) (result >> 16);
@@ -145,48 +151,35 @@ private:
 
     void executeLSType(Instruction instr) {
         if (instr.opcode == 0) {
-            ushort value = memRead(0xFFFF1000 | instr.a2);
+            ushort value = ram.memRead(0xFFFF1000 | instr.a2);
             setValue(instr.a1, value);
         } else {
             ushort value = getValue(instr.a1);
-            memWrite(0xFFFF1000 | instr.a2, value);
+            ram.memWrite(0xFFFF1000 | instr.a2, value);
         }
     }
 
     void executeSPType(Instruction instr) {
         if (instr.opcode == 0) { // PUSH
             ushort value = getValue(instr.a1);
-            memWrite(0xD0000000 | sp--, value);
+            ram.memWrite(0xD0000000 | sp--, value);
         } 
         else if (instr.opcode == 1) { // POP
-            ushort value = memRead(0xD0000000 | ++sp); 
+            ushort value = ram.memRead(0xD0000000 | ++sp); 
             setValue(instr.a1, value);
         }
         else if (instr.opcode == 2) { // SVPC
-            memWrite(0xD0000000 | sp--, cast(ushort) (pc >> 16));
-            memWrite(0xD0000000 | sp--, cast(ushort) ((pc+1) & 0xFFFF));
-            memWrite(0xD0000000 | sp--, fp);
+            ram.memWrite(0xD0000000 | sp--, cast(ushort) (pc >> 16));
+            ram.memWrite(0xD0000000 | sp--, cast(ushort) ((pc+1) & 0xFFFF));
+            ram.memWrite(0xD0000000 | sp--, fp);
             fp = sp;
         } 
         else { // RET
-            fp = memRead(0xD0000000 | ++sp);
-            pc = memRead(0xD0000000 | ++sp);
-            pc |= memRead(0xD0000000 | ++sp) << 16;
+            fp = ram.memRead(0xD0000000 | ++sp);
+            pc = ram.memRead(0xD0000000 | ++sp);
+            pc |= ram.memRead(0xD0000000 | ++sp) << 16;
         } 
     }
-}
-unittest
-{
-    import ram;
-    //import std.stdio;
-    auto rcpu = new RCPU!true;
-    auto mem = new RAM!true("sqrt.mif");
-    rcpu.setMemWrite(&mem.memWrite);
-    rcpu.setMemRead(&mem.memRead);
-    foreach (i; 1..200)
-        rcpu.executeInstruction;
-    writeln(rcpu.pc);
-    writeln(rcpu.a);
 }
 
 
