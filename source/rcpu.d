@@ -28,6 +28,15 @@ public:
         this.log = log;
         initialize();
     }
+    void reset() pure {
+        a = 0;
+        b = 0;
+        c = 0;
+        sp = 0xFFFF;
+        fp = 0xFFFF;
+        pc = 0;
+        f = 0;
+    }
     void setRAM(RAM ram) pure {
         this.ram = ram;
     }
@@ -70,9 +79,10 @@ private:
     LogCallback log;
     RAM ram;
 
-    ushort getValue(ushort addrMode) {
+    ushort getValue(ushort addrMode, bool isIType = false) {
         switch (addrMode) {
-            case 0: return 0;
+            case 0: if(isIType) return sp; 
+                    else return 0;
             case 1: return a;
             case 2: return b;
             case 3: return c;
@@ -82,7 +92,7 @@ private:
                 addr |= ram.memRead(pc++);
                 return ram.memRead(addr);
             }
-            case 6: return ram.memRead(a);
+            case 6: return ram.memRead((ram.pageReg<<16) | a);
             case 7: {
                 uint addr = 0xD0000000 | ((fp + ram.memRead(pc++)) & 0xFFFF);
                 return ram.memRead(addr);
@@ -91,9 +101,9 @@ private:
         }
     }
 
-    void setValue(ushort addrMode, ushort value) {
+    void setValue(ushort addrMode, ushort value, bool isIType = false) {
         switch (addrMode) {
-            case 0: break;
+            case 0: if(isIType) sp = value; break;
             case 1: a = value; break;
             case 2: b = value; break;
             case 3: c = value; break;
@@ -104,7 +114,7 @@ private:
                 ram.memWrite(addr, value);
                 break;
             }
-            case 6: ram.memWrite(a, value); break;
+            case 6: ram.memWrite((ram.pageReg<<16) | a, value); break;
             case 7: {
                 uint addr = 0xD0000000 | ((fp + ram.memRead(pc++)) & 0xFFFF);
                 ram.memWrite(addr, value);
@@ -129,11 +139,11 @@ private:
     }
 
     void executeIType(Instruction instr) {
-        ushort a1 = getValue(instr.a1);
+        ushort a1 = getValue(instr.a1, true);
         ushort a2 = instr.a2;
         ubyte func = ((instr.opcode & 1) * 0b1100) | ((instr.opcode & 0b110) >> 1);
         uint result = alu.calculate(a1, a2, f, func, true, false);
-        setValue(instr.a1, cast(ushort) result);
+        setValue(instr.a1, cast(ushort) result, true);
     }
 
     void executeSIType(Instruction instr) {
@@ -146,7 +156,7 @@ private:
 
     void executeFType(Instruction instr) {
         if (f.value.getBit(instr.a1) == instr.opcode)
-            pc += instr.a2;
+            pc += cast(byte) instr.a2;
     }
 
     void executeLSType(Instruction instr) {

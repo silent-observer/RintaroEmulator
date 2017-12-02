@@ -29,7 +29,6 @@ private:
 
     LogCallback log;
 
-
 public:
     this(string filename, LogCallback log)
     {
@@ -37,6 +36,10 @@ public:
         import std.string;
         import std.conv;
         this.log = log;
+        this.emulatorBP = [];
+        this.stopFlag = false;
+        this.lastEmulatorBP = 0;
+        this.emulatorBPRW = false;
         string text = readText(filename);
         auto index = text.indexOf("000:");
         foreach(line; text[index..$].splitLines) {
@@ -52,7 +55,13 @@ public:
     }
     void memWrite (uint addr, ushort value) {
         import mybitconverter;
+        import std.algorithm : canFind;
         log(format("*%08X <- %04X", addr, value));
+        if (emulatorBP.canFind(addr)) {
+            stopFlag = true;
+            lastEmulatorBP = addr;
+            emulatorBPRW = true;
+        }
         if (addr >= 0x00000000 && addr <= 0x000FFFFF) return; // ROM
         else if (addr >= 0xD0000000 && addr <= 0xD000FFFF) { // Stack
             stack[addr%stackSize] = value;
@@ -97,6 +106,13 @@ public:
     }
 
     ushort memRead (uint addr) {
+        import std.algorithm : canFind;
+        if (emulatorBP.canFind(addr)) {
+            stopFlag = true;
+            lastEmulatorBP = addr;
+            emulatorBPRW = false;
+        }
+
         ushort value = 0;
         if (addr >= 0x00000000 && addr <= 0x000FFFFF) value = rom[addr%romSize]; // ROM
         else if (addr >= 0xD0000000 && addr <= 0xD000FFFF) value = stack[addr%stackSize]; // Stack
@@ -108,9 +124,20 @@ public:
         return value;
     }
 
-    string getComments(uint addr) {
+    string getComments(uint addr) pure const{
         return romComments[addr%romSize];
     }
+
+    ushort pageReg() pure const @property {
+        return fastMem[0];
+    }
+
+    uint[] emulatorBP;
+    bool stopFlag;
+    uint lastEmulatorBP;
+    bool emulatorBPRW;
+
+
 } unittest
 {
     import std.format : format;
