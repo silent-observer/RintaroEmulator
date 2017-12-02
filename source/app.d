@@ -1,6 +1,7 @@
 import std.stdio;
 import rcpu;
 import ram;
+import lcd;
 
 bool isLogging = false;
 
@@ -12,12 +13,13 @@ void main(string[] args)
     }
     RAM ram;
     RCPU rcpu = new RCPU(&log);
+    LCD lcd = new LCD();
     bool initialized = false;
 
     writeln("Welcome to almighty Rintaro Emulator!");
 
     if (args.length == 2) {
-        ram = loadFile(args[1], rcpu);
+        ram = loadFile(args[1], rcpu, lcd);
         initialized = true;
     }
 
@@ -37,7 +39,7 @@ void main(string[] args)
                     writeln(stderr, "Usage: load <.mif file>");
                     break;
                 } else {
-                    ram = loadFile(cmd[1], rcpu);
+                    ram = loadFile(cmd[1], rcpu, lcd);
                     initialized = true;
                     break;
                 }
@@ -163,12 +165,15 @@ void main(string[] args)
                 break;
             }
 
+            case "lcd": writeln(lcd); break;
+
             case "help": 
                 writeln("bpadd <address> -- Add emulator breakpoint");
                 writeln("bplist -- List all emulator breakpoints");
                 writeln("bpremove <address> -- Remove emulator breakpoint");
                 writeln("exit -- Exit from emulator");
                 writeln("help -- Show this text");
+                writeln("lcd -- Show LCD content");
                 writeln("load <.mif file> -- Load file to ROM");
                 writeln("log [<instrction count>] -- Execute instructions with logging");
                 writeln("read <start address> [<end address>] -- Read memory content");
@@ -190,8 +195,9 @@ private void log(string s) {
         writeln(s);
 }
 
-private RAM loadFile(string filename, RCPU rcpu) {
+private RAM loadFile(string filename, RCPU rcpu, LCD lcd) {
     RAM ram = new RAM(filename, &log);
+    ram.setLCD(lcd);
     rcpu.setRAM(ram);
     writeln("File ", filename, " has been successfully loaded!");
     return ram;

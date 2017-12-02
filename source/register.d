@@ -5,7 +5,7 @@ import mybitconverter;
  * Register
  */
 struct Register(size_t size)
-if (size == 16 || size == 32 || size == 4) {
+if (size == 16 || size == 32 || size == 8 || size == 4 || size == 3) {
 
     static if (size == 32) alias T = uint;
     else alias T = ushort;
@@ -17,7 +17,8 @@ private:
         assert(_value >= 0);
         static if(size == 16) assert(_value <= ushort.max);
         else static if(size == 4) assert(_value <= 15);
-        
+        else static if(size == 3) assert(_value <= 7);
+        else static if(size == 8) assert(_value <= 255);
     }
 public:
     this(T value) pure {
@@ -27,6 +28,8 @@ public:
     out (result) {
         static if(size == 16) assert(_value <= ushort.max);
         else static if(size == 4) assert(_value <= 15);
+        else static if(size == 3) assert(_value <= 7);
+        else static if(size == 8) assert(_value <= 255);
     }
     body {
         return _value;
@@ -35,6 +38,8 @@ public:
         _value = arg;
         static if(size == 16) _value &= ushort.max;
         else static if(size == 4) _value &= 15;
+        else static if(size == 3) _value &= 7;
+        else static if(size == 8) _value &= 255;
     }
 
     T opUnary(string s)() if (s == "+" || s == "-" || s == "~") {

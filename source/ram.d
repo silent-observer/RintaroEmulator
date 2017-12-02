@@ -1,5 +1,6 @@
 import std.stdio;
 import std.format : format;
+import lcd;
 
 enum romSize = 1024;
 enum stackSize = 1024;
@@ -78,7 +79,7 @@ public:
         else 
         switch (addr) {
             case 0xFFFF0000: lcdDataWrite(value & 0xFF); break;
-            case 0xFFFF0001: lcdCtrlWrite(value & 0x3); break;
+            case 0xFFFF0001: lcdCtrlWrite(value & 0x7); break;
 
             case 0xFFFFFFFA: irEn = value > 0; break;
             case 0xFFFFFFFB: irAddr.setBits(0, 16, value); break;
@@ -130,6 +131,11 @@ public:
 
     ushort pageReg() pure const @property {
         return fastMem[0];
+    }
+
+    void setLCD(LCD lcd) {
+        lcdDataWrite = &lcd.writeData;
+        lcdCtrlWrite = &lcd.writeCtrl;
     }
 
     uint[] emulatorBP;
