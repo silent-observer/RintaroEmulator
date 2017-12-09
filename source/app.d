@@ -50,44 +50,48 @@ void main(string[] args)
 
             case "run": 
             if (cmd.length > 2) {
-                writeln(stderr, "Usage: run [<instrction count>]");
+                writeln(stderr, "Usage: run [<instruction count>]");
                 break;
             } else {
                 isLogging = false;
                 int count = 1;
                 if (cmd.length == 2) count = cmd[1].getInt;
+                rcpu.ticks = 0;
                 for (int i = 0; i < count; i++) {
                     rcpu.executeInstruction();
                     if (ram.stopFlag) {
                         import std.conv : to;
-                        writefln("Breakpoint encountered after %d instructions! %s %08X", 
+                        writefln("Breakpoint encountered after %s instructions! %s %08X", 
                             i, ram.emulatorBPRW? "Write to" : "Read from", ram.lastEmulatorBP);
                         ram.stopFlag = false;
                         break;
                     }
                 }
+                writefln("Execution took %s ms", rcpu.ticks * 0.00256);
                 break;
             }
 
             case "log": 
             if (cmd.length > 2) {
-                writeln(stderr, "Usage: log [<instrction count>]");
+                writeln(stderr, "Usage: log [<instruction count>]");
                 break;
             } else {
                 isLogging = true;
                 uint count = 1;
                 if (cmd.length == 2) count = cmd[1].getInt;
+                rcpu.ticks = 0;
                 for (uint i = 0; i < count; i++) {
                     rcpu.executeInstruction();
                     if (i != count - 1) writeln();
                     if (ram.stopFlag) {
                         import std.conv : to;
-                        writefln("Breakpoint encountered after %d instructions! %s %08X", 
+                        writefln("Breakpoint encountered after %s instructions! %s %08X", 
                             i, ram.emulatorBPRW? "Write to" : "Read from", ram.lastEmulatorBP);
                         ram.stopFlag = false;
                         break;
                     }
                 }
+                writefln("Execution took %s ms", rcpu.ticks * 0.00256);
                 break;
             }
 
@@ -161,7 +165,7 @@ void main(string[] args)
                 import std.algorithm;
                 int index = ram.emulatorBP.countUntil(cmd[1].getInt);
                 if (index == -1) writeln("No such breakpoint!");
-                else ram.emulatorBP.remove(index);
+                else ram.emulatorBP = ram.emulatorBP.remove(index);
                 break;
             }
 
@@ -175,10 +179,10 @@ void main(string[] args)
                 writeln("help -- Show this text");
                 writeln("lcd -- Show LCD content");
                 writeln("load <.mif file> -- Load file to ROM");
-                writeln("log [<instrction count>] -- Execute instructions with logging");
+                writeln("log [<instruction count>] -- Execute instructions with logging");
                 writeln("read <start address> [<end address>] -- Read memory content");
                 writeln("reset -- Reset RCPU to default state (file is still loaded)");
-                writeln("run [<instrction count>] -- Execute instructions without logging");
+                writeln("run [<instruction count>] -- Execute instructions without logging");
                 writeln("state -- Show current RCPU state");
                 writeln("stack -- Show stack content");
                 writeln("write <start address> [<end address>] <data> -- Write data to memory");

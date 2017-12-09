@@ -4,7 +4,7 @@ import lcd;
 
 enum romSize = 1024;
 enum stackSize = 1024;
-enum heapSize = 4096;
+enum heapSize = 16384;
 /**
  * RAM
  */

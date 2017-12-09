@@ -23,6 +23,7 @@ public:
     Register!32 pc;
     FlagRegister f;
     ALU alu;
+    uint ticks;
     this (LogCallback log) pure
     {
         this.log = log;
@@ -36,6 +37,7 @@ public:
         fp = 0xFFFF;
         pc = 0;
         f = 0;
+        ticks = 0;
     }
     void setRAM(RAM ram) pure {
         this.ram = ram;
@@ -45,6 +47,7 @@ public:
         import std.format : format;
         log(reportState);
         auto opcode = ram.memRead(pc++);
+        ticks++;
         Instruction instr = decodeInstruction(opcode);
         log(format("%s -- %s", instr, ram.getComments(pc-1)));
         final switch (instr.type) {
@@ -74,6 +77,7 @@ private:
         pc = Register!32();
         f = FlagRegister();
         alu = new ALU;
+        ticks = 0;
     }
 
     LogCallback log;
@@ -86,15 +90,17 @@ private:
             case 1: return a;
             case 2: return b;
             case 3: return c;
-            case 4: return ram.memRead(pc++);
+            case 4: ticks++; return ram.memRead(pc++);
             case 5: {
                 uint addr = ram.memRead(pc++) << 16;
                 addr |= ram.memRead(pc++);
+                ticks += 3;
                 return ram.memRead(addr);
             }
-            case 6: return ram.memRead((ram.pageReg<<16) | a);
+            case 6: ticks++; return ram.memRead((ram.pageReg<<16) | a);
             case 7: {
                 uint addr = 0xD0000000 | ((fp + ram.memRead(pc++)) & 0xFFFF);
+                ticks += 2;
                 return ram.memRead(addr);
             }
             default: throw new InvalidAddrModeException(addrMode, pc);
@@ -112,12 +118,14 @@ private:
                 uint addr = ram.memRead(pc++) << 16;
                 addr |= ram.memRead(pc++);
                 ram.memWrite(addr, value);
+                ticks += 3;
                 break;
             }
-            case 6: ram.memWrite((ram.pageReg<<16) | a, value); break;
+            case 6: ticks++; ram.memWrite((ram.pageReg<<16) | a, value); break;
             case 7: {
                 uint addr = 0xD0000000 | ((fp + ram.memRead(pc++)) & 0xFFFF);
                 ram.memWrite(addr, value);
+                ticks += 2;
                 break;
             }
             default: throw new InvalidAddrModeException(addrMode, pc);
@@ -130,17 +138,20 @@ private:
         bool isNOP = instr.a1 == 0 && instr.a2 == 0 && instr.a3 == 0 && instr.opcode == 0;
         uint result = alu.calculate(a1, a2, f, instr.opcode, !isNOP, false);
         setValue(instr.a3, cast(ushort) (result & 0xFFFF));
+        ticks++;
         if (instr.opcode == 4) // MUL instruction
             a = cast(ushort) (result >> 16);
     }
 
     void executeJType(Instruction instr) {
         pc = instr.a1;
+        ticks++;
     }
 
     void executeIType(Instruction instr) {
         ushort a1 = getValue(instr.a1, true);
         ushort a2 = instr.a2;
+        ticks++;
         ubyte func = ((instr.opcode & 1) * 0b1100) | ((instr.opcode & 0b110) >> 1);
         uint result = alu.calculate(a1, a2, f, func, true, false);
         setValue(instr.a1, cast(ushort) result, true);
@@ -149,17 +160,21 @@ private:
     void executeSIType(Instruction instr) {
         ushort a1 = getValue(instr.a1);
         ushort a3 = instr.a3;
+        ticks++;
         ubyte func = 0b1000 | instr.opcode;
         uint result = alu.calculate(a1, a3, f, func, true, false);
         setValue(instr.a2, cast(ushort) result);
     }
 
     void executeFType(Instruction instr) {
-        if (f.value.getBit(instr.a1) == instr.opcode)
+        if (f.value.getBit(instr.a1) == instr.opcode) {
             pc += cast(byte) instr.a2;
+            ticks++;
+        }
     }
 
     void executeLSType(Instruction instr) {
+        ticks++;
         if (instr.opcode == 0) {
             ushort value = ram.memRead(0xFFFF1000 | instr.a2);
             setValue(instr.a1, value);
@@ -173,21 +188,25 @@ private:
         if (instr.opcode == 0) { // PUSH
             ushort value = getValue(instr.a1);
             ram.memWrite(0xD0000000 | sp--, value);
+            ticks += 2;
         } 
         else if (instr.opcode == 1) { // POP
             ushort value = ram.memRead(0xD0000000 | ++sp); 
             setValue(instr.a1, value);
+            ticks += 2;
         }
         else if (instr.opcode == 2) { // SVPC
             ram.memWrite(0xD0000000 | sp--, cast(ushort) (pc >> 16));
             ram.memWrite(0xD0000000 | sp--, cast(ushort) ((pc+1) & 0xFFFF));
             ram.memWrite(0xD0000000 | sp--, fp);
             fp = sp;
+            ticks += 3;
         } 
         else { // RET
             fp = ram.memRead(0xD0000000 | ++sp);
             pc = ram.memRead(0xD0000000 | ++sp);
             pc |= ram.memRead(0xD0000000 | ++sp) << 16;
+            ticks += 3;
         } 
     }
 }

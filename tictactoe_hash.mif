@@ -1,0 +1,358 @@
+DEPTH = 1024;
+WIDTH = 16;
+ADDRESS_RADIX = HEX;
+DATA_RADIX = HEX;
+CONTENT
+BEGIN
+-- "tictactoe_hash.rcpu"
+000: 0805 0001 1000 0000 ;     --   2:     mov 1, board[0] ; XO_
+004: 0805 0002 1000 0001 ;     --   3:     mov 2, board[1] ; ___
+008: 0005 1000 0002 ;          --   4:     mov 0, board[2] ; ___
+00b: 0005 1000 0003 ;          --   5:     mov 0, board[3]
+00e: 0005 1000 0004 ;          --   6:     mov 0, board[4]
+011: 0005 1000 0005 ;          --   7:     mov 0, board[5]
+014: 0005 1000 0006 ;          --   8:     mov 0, board[6]
+017: 0005 1000 0007 ;          --   9:     mov 0, board[7]
+01a: 0005 1000 0008 ;          --  10:     mov 0, board[8]
+01d: 0805 0002 1000 0009 ;     --  11:     mov 2, board[9]
+021: 0805 0001 1000 000a ;     --  12:     mov 1, board[10]
+025: 3800 0001 ;               --  14:     push 1
+027: 3000 ;                    --  15:     push board.l
+029: 3800 1000 ;               --  16:     push board.h
+02b: 3100 ;                    --  17:     call minimax
+02c: 80ed ;                    --  17:     call minimax
+02d: 4003 ;                    --  18:     addi SP, 3, SP
+02e: 0a02 1000 000b ;          --  19:     mov *choice, B
+031: 8031 ;                    --  20:     halt
+032: 0e02 0006 ;               --  38:     mov [6], B
+034: 2f80 0004 ;               --  39:     save [4], @0
+036: 0e01 0005 ;               --  40:     mov [5], A
+038: 420a ;                    --  41:     addi A, 10, A
+039: 0c03 ;                    --  42:     mov *A, C
+03a: 2c86 ;                    --  43:     jlt testWin_retFalse
+03b: 6603 ;                    --  44:     subi C, 3, C
+03c: 240b ;                    --  45:     jge testWin_test1end
+03d: 0e01 0005 ;               --  47:     mov [5], A
+03f: 0c50 ;                    --  48:     sub *A, B, 0
+040: 2221 ;                    --  49:     jne testWin_test3end
+041: 4201 ;                    --  50:     addi A, 1, A
+042: 0c50 ;                    --  51:     sub *A, B, 0
+043: 221e ;                    --  52:     jne testWin_test3end
+044: 4201 ;                    --  53:     addi A, 1, A
+045: 0c50 ;                    --  54:     sub *A, B, 0
+046: 221b ;                    --  55:     jne testWin_test3end
+047: 80c3 ;                    --  56:     jmp testWin_retTrue
+048: 6603 ;                    --  58:     subi C, 3, C
+049: 240c ;                    --  59:     jge testWin_test2end
+04a: 0e01 0005 ;               --  61:     mov [5], A
+04c: 4203 ;                    --  62:     addi A, 3, A
+04d: 0c50 ;                    --  63:     sub *A, B, 0
+04e: 2213 ;                    --  64:     jne testWin_test3end
+04f: 4201 ;                    --  65:     addi A, 1, A
+050: 0c50 ;                    --  66:     sub *A, B, 0
+051: 2210 ;                    --  67:     jne testWin_test3end
+052: 4201 ;                    --  68:     addi A, 1, A
+053: 0c50 ;                    --  69:     sub *A, B, 0
+054: 220d ;                    --  70:     jne testWin_test3end
+055: 80c3 ;                    --  71:     jmp testWin_retTrue
+056: 0e01 0005 ;               --  74:     mov [5], A
+058: 4206 ;                    --  75:     addi A, 6, A
+059: 0c50 ;                    --  76:     sub *A, B, 0
+05a: 2207 ;                    --  77:     jne testWin_test3end
+05b: 4201 ;                    --  78:     addi A, 1, A
+05c: 0c50 ;                    --  79:     sub *A, B, 0
+05d: 2204 ;                    --  80:     jne testWin_test3end
+05e: 4201 ;                    --  81:     addi A, 1, A
+05f: 0c50 ;                    --  82:     sub *A, B, 0
+060: 2201 ;                    --  83:     jne testWin_test3end
+061: 80c3 ;                    --  84:     jmp testWin_retTrue
+062: 0e01 0005 ;               --  86:     mov [5], A
+064: 420a ;                    --  87:     addi A, 10, A
+065: 0c03 ;                    --  88:     mov *A, C
+066: 2a04 ;                    --  89:     jez testWin_test4
+067: 6603 ;                    --  90:     subi C, 3, C
+068: 2a02 ;                    --  91:     jez testWin_test4
+069: 6603 ;                    --  92:     subi C, 3, C
+06a: 220b ;                    --  93:     jnz testWin_test4end
+06b: 0e01 0005 ;               --  95:     mov [5], A
+06d: 0c50 ;                    --  96:     sub *A, B, 0
+06e: 222b ;                    --  97:     jne testWin_test6end
+06f: 4203 ;                    --  98:     addi A, 3, A
+070: 0c50 ;                    --  99:     sub *A, B, 0
+071: 2228 ;                    -- 100:     jne testWin_test6end
+072: 4203 ;                    -- 101:     addi A, 3, A
+073: 0c50 ;                    -- 102:     sub *A, B, 0
+074: 2225 ;                    -- 103:     jne testWin_test6end
+075: 80c3 ;                    -- 104:     jmp testWin_retTrue
+076: 4605 ;                    -- 106:     addi C, 5, C
+077: 2a04 ;                    -- 107:     jez testWin_test5
+078: 6603 ;                    -- 108:     subi C, 3, C
+079: 2a02 ;                    -- 109:     jez testWin_test5
+07a: 6603 ;                    -- 110:     subi C, 3, C
+07b: 220c ;                    -- 111:     jnz testWin_test5end
+07c: 0e01 0005 ;               -- 113:     mov [5], A
+07e: 4201 ;                    -- 114:     addi A, 1, A
+07f: 0c50 ;                    -- 115:     sub *A, B, 0
+080: 2219 ;                    -- 116:     jne testWin_test6end
+081: 4203 ;                    -- 117:     addi A, 3, A
+082: 0c50 ;                    -- 118:     sub *A, B, 0
+083: 2216 ;                    -- 119:     jne testWin_test6end
+084: 4203 ;                    -- 120:     addi A, 3, A
+085: 0c50 ;                    -- 121:     sub *A, B, 0
+086: 2213 ;                    -- 122:     jne testWin_test6end
+087: 80c3 ;                    -- 123:     jmp testWin_retTrue
+088: 4605 ;                    -- 125:     addi C, 5, C
+089: 2a04 ;                    -- 126:     jez testWin_test6
+08a: 6603 ;                    -- 127:     subi C, 3, C
+08b: 2a02 ;                    -- 128:     jez testWin_test6
+08c: 6603 ;                    -- 129:     subi C, 3, C
+08d: 220c ;                    -- 130:     jnz testWin_test6end
+08e: 0e01 0005 ;               -- 132:     mov [5], A
+090: 4202 ;                    -- 133:     addi A, 2, A
+091: 0c50 ;                    -- 134:     sub *A, B, 0
+092: 2207 ;                    -- 135:     jne testWin_test6end
+093: 4203 ;                    -- 136:     addi A, 3, A
+094: 0c50 ;                    -- 137:     sub *A, B, 0
+095: 2204 ;                    -- 138:     jne testWin_test6end
+096: 4203 ;                    -- 139:     addi A, 3, A
+097: 0c50 ;                    -- 140:     sub *A, B, 0
+098: 2201 ;                    -- 141:     jne testWin_test6end
+099: 80c3 ;                    -- 142:     jmp testWin_retTrue
+09a: 0e01 0005 ;               -- 144:     mov [5], A
+09c: 420a ;                    -- 145:     addi A, 10, A
+09d: 0c03 ;                    -- 146:     mov *A, C
+09e: 4703 ;                    -- 147:     andi C, 3, C
+09f: 220b ;                    -- 148:     jnz testWin_test7end
+0a0: 0e01 0005 ;               -- 150:     mov [5], A
+0a2: 0c50 ;                    -- 151:     sub *A, B, 0
+0a3: 2207 ;                    -- 152:     jne testWin_test7end
+0a4: 4204 ;                    -- 153:     addi A, 4, A
+0a5: 0c50 ;                    -- 154:     sub *A, B, 0
+0a6: 2204 ;                    -- 155:     jne testWin_test7end
+0a7: 4204 ;                    -- 156:     addi A, 4, A
+0a8: 0c50 ;                    -- 157:     sub *A, B, 0
+0a9: 2201 ;                    -- 158:     jne testWin_test7end
+0aa: 80c3 ;                    -- 159:     jmp testWin_retTrue
+0ab: 0e01 0005 ;               -- 161:     mov [5], A
+0ad: 420a ;                    -- 162:     addi A, 10, A
+0ae: 0c03 ;                    -- 163:     mov *A, C
+0af: 6602 ;                    -- 164:     subi C, 2, C
+0b0: 2a04 ;                    -- 165:     jez testWin_test8
+0b1: 6602 ;                    -- 166:     subi C, 2, C
+0b2: 2a02 ;                    -- 167:     jez testWin_test8
+0b3: 6602 ;                    -- 168:     subi C, 2, C
+0b4: 220c ;                    -- 169:     jnz testWin_test8end
+0b5: 0e01 0005 ;               -- 171:     mov [5], A
+0b7: 4202 ;                    -- 172:     addi A, 2, A
+0b8: 0c50 ;                    -- 173:     sub *A, B, 0
+0b9: 2207 ;                    -- 174:     jne testWin_test8end
+0ba: 4202 ;                    -- 175:     addi A, 2, A
+0bb: 0c50 ;                    -- 176:     sub *A, B, 0
+0bc: 2204 ;                    -- 177:     jne testWin_test8end
+0bd: 4202 ;                    -- 178:     addi A, 2, A
+0be: 0c50 ;                    -- 179:     sub *A, B, 0
+0bf: 2201 ;                    -- 180:     jne testWin_test8end
+0c0: 80c3 ;                    -- 181:     jmp testWin_retTrue
+0c1: 0001 ;                    -- 184:     mov 0, A
+0c2: 3180 ;                    -- 185:     ret
+0c3: 0801 0001 ;               -- 187:     mov 1, A
+0c5: 3180 ;                    -- 188:     ret
+0c6: 3800 0001 ;               -- 192:     push 1
+0c8: 3e00 0005 ;               -- 193:     push [5]
+0ca: 3e00 0004 ;               -- 194:     push [4]
+0cc: 3100 ;                    -- 195:     call testWin
+0cd: 8032 ;                    -- 195:     call testWin
+0ce: 4003 ;                    -- 196:     addi SP, 3, SP
+0cf: 0200 ;                    -- 197:     mov A, 0
+0d0: 2a07 ;                    -- 198:     jez scoreGame_notXWin
+0d1: 2f80 0004 ;               -- 200:     save [4], @0
+0d3: 0e01 0005 ;               -- 201:     mov [5], A
+0d5: 4209 ;                    -- 202:     addi A, 9, A
+0d6: 0c01 ;                    -- 203:     mov *A, A
+0d7: 3180 ;                    -- 204:     ret
+0d8: 3800 0002 ;               -- 206:     push 2
+0da: 3e00 0005 ;               -- 207:     push [5]
+0dc: 3e00 0004 ;               -- 208:     push [4]
+0de: 3100 ;                    -- 209:     call testWin
+0df: 8032 ;                    -- 209:     call testWin
+0e0: 4003 ;                    -- 210:     addi SP, 3, SP
+0e1: 0200 ;                    -- 211:     mov A, 0
+0e2: 2a08 ;                    -- 212:     jez scoreGame_notOWin
+0e3: 2f80 0004 ;               -- 214:     save [4], @0
+0e5: 0e01 0005 ;               -- 215:     mov [5], A
+0e7: 4209 ;                    -- 216:     addi A, 9, A
+0e8: 0c01 ;                    -- 217:     mov *A, A
+0e9: 0049 ;                    -- 218:     sub 0, A, A
+0ea: 3180 ;                    -- 219:     ret
+0eb: 0001 ;                    -- 221:     mov 0, A
+0ec: 3180 ;                    -- 222:     ret
+0ed: 3e00 0005 ;               -- 228:     push [5]
+0ef: 3e00 0004 ;               -- 229:     push [4]
+0f1: 3100 ;                    -- 230:     call hashGame
+0f2: 81a8 ;                    -- 230:     call hashGame
+0f3: 4002 ;                    -- 231:     addi SP, 2, SP
+0f4: 0202 ;                    -- 232:     mov A, B
+0f5: 0809 0010 ;               -- 233:     add hashTable.l, A, A
+0f7: 2980 1000 ;               -- 234:     save hashTable.h, @0
+0f9: 0c01 ;                    -- 235:     mov *A, A
+0fa: 2203 ;                    -- 236:     jnz minimax_hashtest_for
+0fb: 0052 ;                    -- 237:     sub 0, B, B
+0fc: 3400 ;                    -- 238:     push B
+0fd: 8114 ;                    -- 239:     jmp minimax_hashtest_for_end
+0fe: 3200 ;                    -- 241:     push A
+0ff: 3800 1000 ;               -- 242:     push hashSpace.h
+101: 3e00 0005 ;               -- 243:     push [5]
+103: 3e00 0004 ;               -- 244:     push [4]
+105: 3100 ;                    -- 245:     call cmpGame
+106: 81c4 ;                    -- 245:     call cmpGame
+107: 2a05 ;                    -- 246:     jez minimax_hashtest_for_inc
+108: 4003 ;                    -- 247:     addi SP, 3, SP
+109: 3280 ;                    -- 248:     pop A
+10a: 4209 ;                    -- 249:     addi A, 9, A
+10b: 0c01 ;                    -- 250:     mov *A, A
+10c: 3180 ;                    -- 251:     ret
+10d: 4003 ;                    -- 253:     addi SP, 3, SP
+10e: 3280 ;                    -- 254:     pop A
+10f: 420a ;                    -- 255:     addi A, 10, A
+110: 0202 ;                    -- 256:     mov A, B
+111: 0c01 ;                    -- 257:     mov *A, A
+112: 22eb ;                    -- 258:     jnz minimax_hashtest_for
+113: 3400 ;                    -- 259:     push B ; [0] <= hashedGame
+114: 3e00 0005 ;               -- 261:     push [5]
+116: 3e00 0004 ;               -- 262:     push [4]
+118: 3100 ;                    -- 263:     call scoreGame
+119: 80c6 ;                    -- 263:     call scoreGame
+11a: 4002 ;                    -- 264:     addi SP, 2, SP
+11b: 3200 ;                    -- 265:     push A ; [-1] <= score
+11c: 0200 ;                    -- 266:     mov A, 0
+11d: 2260 ;                    -- 267:     jnz minimax_returnScore
+11e: 2f80 0004 ;               -- 268:     save [4], @0
+120: 0e01 0005 ;               -- 269:     mov [5], A
+122: 4209 ;                    -- 270:     addi A, 9, A
+123: 0c01 ;                    -- 271:     mov *A, A
+124: 6209 ;                    -- 272:     subi A, 9, A
+125: 2a58 ;                    -- 273:     jez minimax_returnScore
+126: 3800 ffff ;               -- 274:     push -1 ; [-2] <= bestMove
+128: 0e01 0006 ;               -- 275:     mov [6], A
+12a: 6201 ;                    -- 276:     subi A, 1, A
+12b: 2204 ;                    -- 277:     jnz minimax_bestScoreElse
+12c: 0807 fff5 ffff ;          -- 278:     mov -11, [-1]
+12f: 8133 ;                    -- 279:     jmp minimax_bestScoreIfEnd
+130: 0807 000b ffff ;          -- 281:     mov 11, [-1]
+133: 2f80 0004 ;               -- 283:     save [4], @0
+135: 0e01 0005 ;               -- 284:     mov [5], A
+137: 420a ;                    -- 285:     addi A, 10, A
+138: 3c00 ;                    -- 286:     push *A ; [-3] <= prevMove
+139: 6201 ;                    -- 287:     subi A, 1, A
+13a: 4c01 ;                    -- 288:     addi *A, 1, *A ; game->count++
+13b: 3000 ;                    -- 289:     push 0 ; [-4] <= move
+13c: 0e01 0005 ;               -- 291:     mov [5], A
+13e: 0e09 fffc ;               -- 292:     add [-4], A, A
+140: 0c00 ;                    -- 293:     mov *A, 0
+141: 2228 ;                    -- 294:     jnz minimax_for_inc
+142: 0e06 0006 ;               -- 295:     mov [6], *A
+144: 0e01 0005 ;               -- 296:     mov [5], A
+146: 420a ;                    -- 297:     addi A, 10, A
+147: 0e06 fffc ;               -- 298:     mov [-4], *A
+149: 0e01 0006 ;               -- 299:     mov [6], A
+14b: 6303 ;                    -- 300:     xori A, 3, A
+14c: 3200 ;                    -- 301:     push A
+14d: 3e00 0005 ;               -- 302:     push [5]
+14f: 3e00 0004 ;               -- 303:     push [4]
+151: 3100 ;                    -- 304:     call minimax
+152: 80ed ;                    -- 304:     call minimax
+153: 4003 ;                    -- 305:     addi SP, 3, SP
+154: 0e02 0006 ;               -- 306:     mov [6], B
+156: 6401 ;                    -- 307:     subi B, 1, B
+157: 2204 ;                    -- 308:     jnz minimax_for_if_else
+158: 0e48 ffff ;               -- 309:     sub [-1], A, 0
+15a: 2c05 ;                    -- 310:     jlt minimax_for_if_save_score
+15b: 8165 ;                    -- 311:     jmp minimax_for_if_end
+15c: 0e03 ffff ;               -- 313:     mov [-1], C
+15e: 0258 ;                    -- 314:     sub A, C, 0
+15f: 2405 ;                    -- 315:     jge minimax_for_if_end
+160: 0207 ffff ;               -- 317:     mov A, [-1]
+162: 0e07 fffc fffe ;          -- 318:     mov [-4], [-2]
+165: 0e01 0005 ;               -- 320:     mov [5], A
+167: 0e09 fffc ;               -- 321:     add [-4], A, A
+169: 0006 ;                    -- 322:     mov 0, *A
+16a: 0e03 fffc ;               -- 324:     mov [-4], C
+16c: 6608 ;                    -- 325:     subi C, 8, C
+16d: 2a04 ;                    -- 326:     jez minimax_for_end
+16e: 4609 ;                    -- 327:     addi C, 9, C
+16f: 0607 fffc ;               -- 328:     mov C, [-4]
+171: 813c ;                    -- 329:     jmp minimax_for
+172: 0e01 0005 ;               -- 331:     mov [5], A
+174: 4209 ;                    -- 332:     addi A, 9, A
+175: 6c01 ;                    -- 333:     subi *A, 1, *A
+176: 4201 ;                    -- 334:     addi A, 1, A
+177: 0e05 fffe 1000 000b ;     -- 335:     mov [-2], *choice
+17b: 0e06 fffd ;               -- 336:     mov [-3], *A
+17d: 4003 ;                    -- 337:     addi SP, 3, SP
+17e: 0802 0110 ;               -- 339:     mov hashSpace.l, B
+180: 0a12 1000 000c ;          -- 340:     add *allocSize, B, B
+183: 4a0b 1000 000c 1000 000c ; -- 341:     addi *allocSize, 11, *allocSize
+188: 0e01 0000 ;               -- 342:     mov [0], A
+18a: 2402 ;                    -- 343:     jge minimax_getHashAddress_end
+18b: 0849 0010 ;               -- 344:     sub hashTable.l, A, A
+18d: 420a ;                    -- 346:     addi A, 10, A
+18e: 2980 1000 ;               -- 347:     save hashSpace.h, @0
+190: 0406 ;                    -- 348:     mov B, *A
+191: 0803 0008 ;               -- 349:     mov 8, C
+193: 0e19 0005 ;               -- 351:     add [5], C, A
+195: 2f80 0004 ;               -- 352:     save [4], @0
+197: 2d81 ;                    -- 353:     save *A, @1
+198: 0419 ;                    -- 354:     add B, C, A
+199: 2980 1000 ;               -- 355:     save hashSpace.h, @0
+19b: 2d01 ;                    -- 356:     load @1, *A
+19c: 6601 ;                    -- 357:     subi C, 1, C
+19d: 22f5 ;                    -- 358:     jnz minimax_newHashFor
+19e: 0401 ;                    -- 359:     mov B, A
+19f: 4209 ;                    -- 360:     addi A, 9, A
+1a0: 0e06 ffff ;               -- 361:     mov [-1], *A
+1a2: 4201 ;                    -- 362:     addi A, 1, A
+1a3: 0006 ;                    -- 363:     mov 0, *A
+1a4: 0e01 ffff ;               -- 364:     mov [-1], A
+1a6: 4002 ;                    -- 365:     addi SP, 2, SP
+1a7: 3180 ;                    -- 366:     ret
+1a8: 0002 ;                    -- 374:     mov 0, B
+1a9: 2f80 0004 ;               -- 375:     save [4], @0
+1ab: 0e01 0005 ;               -- 376:     mov [5], A
+1ad: 0dd2 ;                    -- 377:     xor *A, B, B
+1ae: 4204 ;                    -- 378:     addi A, 4, A
+1af: 0dd2 ;                    -- 379:     xor *A, B, B
+1b0: 6203 ;                    -- 380:     subi A, 3, A
+1b1: 1212 ;                    -- 381:     lshi A, 2, A
+1b2: 0dd2 ;                    -- 382:     xor *A, B, B
+1b3: 4204 ;                    -- 383:     addi A, 4, A
+1b4: 0dd2 ;                    -- 384:     xor *A, B, B
+1b5: 6203 ;                    -- 385:     subi A, 3, A
+1b6: 1212 ;                    -- 386:     lshi A, 2, A
+1b7: 0dd2 ;                    -- 387:     xor *A, B, B
+1b8: 4204 ;                    -- 388:     addi A, 4, A
+1b9: 0dd2 ;                    -- 389:     xor *A, B, B
+1ba: 6203 ;                    -- 390:     subi A, 3, A
+1bb: 1212 ;                    -- 391:     lshi A, 2, A
+1bc: 0dd2 ;                    -- 392:     xor *A, B, B
+1bd: 4204 ;                    -- 393:     addi A, 4, A
+1be: 0dd2 ;                    -- 394:     xor *A, B, B
+1bf: 4201 ;                    -- 395:     addi A, 1, A
+1c0: 1212 ;                    -- 396:     lshi A, 2, A
+1c1: 0dd2 ;                    -- 397:     xor *A, B, B
+1c2: 0401 ;                    -- 398:     mov B, A
+1c3: 3180 ;                    -- 399:     ret
+1c4: 0803 0008 ;               -- 403:     mov 8, C
+1c6: 2f80 0004 ;               -- 405:     save [4], @0
+1c8: 0e19 0005 ;               -- 406:     add [5], C, A
+1ca: 0c02 ;                    -- 407:     mov *A, B
+1cb: 2f80 0006 ;               -- 408:     save [6], @0
+1cd: 0e19 0007 ;               -- 409:     add [7], C, A
+1cf: 0c50 ;                    -- 410:     sub *A, B, 0
+1d0: 2a02 ;                    -- 411:     jez cmpGame_equals
+1d1: 0001 ;                    -- 412:     mov 0, A
+1d2: 3180 ;                    -- 413:     ret
+1d3: 6601 ;                    -- 415:     subi C, 1, C
+1d4: 22f1 ;                    -- 416:     jnz cmpGame_for
+1d5: 0801 0001 ;               -- 417:     mov 1, A
+1d7: 3180 ;                    -- 418:     ret
+END;

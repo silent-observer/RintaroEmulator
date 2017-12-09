@@ -1,0 +1,470 @@
+DEPTH = 1024;
+WIDTH = 16;
+ADDRESS_RADIX = HEX;
+DATA_RADIX = HEX;
+CONTENT
+BEGIN
+-- "tictactoe.rcpu"
+000: 3100 ;                    --   2:     call gui
+001: 8243 ;                    --   2:     call gui
+002: 0805 0001 1000 0000 ;     --   4:     mov 1, game[0] ; XO_
+006: 0805 0002 1000 0001 ;     --   5:     mov 2, game[1] ; ___
+00a: 0005 1000 0002 ;          --   6:     mov 0, game[2] ; ___
+00d: 0005 1000 0003 ;          --   7:     mov 0, game[3]
+010: 0005 1000 0004 ;          --   8:     mov 0, game[4]
+013: 0005 1000 0005 ;          --   9:     mov 0, game[5]
+016: 0005 1000 0006 ;          --  10:     mov 0, game[6]
+019: 0005 1000 0007 ;          --  11:     mov 0, game[7]
+01c: 0005 1000 0008 ;          --  12:     mov 0, game[8]
+01f: 0805 0002 1000 0009 ;     --  13:     mov 2, game[9]
+023: 0805 0001 1000 000a ;     --  14:     mov 1, game[10]
+027: 3800 0001 ;               --  16:     push 1
+029: 3000 ;                    --  17:     push game.l
+02b: 3800 1000 ;               --  18:     push game.h
+02d: 3100 ;                    --  19:     call solve
+02e: 8283 ;                    --  19:     call solve
+02f: 4003 ;                    --  20:     addi SP, 3, SP
+030: 0a02 1000 0080 ;          --  21:     mov *choice, B
+033: 8033 ;                    --  23:     halt
+034: 0e02 0006 ;               --  35:     mov [6], B
+036: 2f80 0004 ;               --  36:     save [4], @0
+038: 0e01 0005 ;               --  37:     mov [5], A
+03a: 420a ;                    --  38:     addi A, 10, A
+03b: 0c03 ;                    --  39:     mov *A, C
+03c: 2c86 ;                    --  40:     jlt testWin_retFalse
+03d: 6603 ;                    --  41:     subi C, 3, C
+03e: 240b ;                    --  42:     jge testWin_test1end
+03f: 0e01 0005 ;               --  44:     mov [5], A
+041: 0c50 ;                    --  45:     sub *A, B, 0
+042: 2221 ;                    --  46:     jne testWin_test3end
+043: 4201 ;                    --  47:     addi A, 1, A
+044: 0c50 ;                    --  48:     sub *A, B, 0
+045: 221e ;                    --  49:     jne testWin_test3end
+046: 4201 ;                    --  50:     addi A, 1, A
+047: 0c50 ;                    --  51:     sub *A, B, 0
+048: 221b ;                    --  52:     jne testWin_test3end
+049: 80c5 ;                    --  53:     jmp testWin_retTrue
+04a: 6603 ;                    --  55:     subi C, 3, C
+04b: 240c ;                    --  56:     jge testWin_test2end
+04c: 0e01 0005 ;               --  58:     mov [5], A
+04e: 4203 ;                    --  59:     addi A, 3, A
+04f: 0c50 ;                    --  60:     sub *A, B, 0
+050: 2213 ;                    --  61:     jne testWin_test3end
+051: 4201 ;                    --  62:     addi A, 1, A
+052: 0c50 ;                    --  63:     sub *A, B, 0
+053: 2210 ;                    --  64:     jne testWin_test3end
+054: 4201 ;                    --  65:     addi A, 1, A
+055: 0c50 ;                    --  66:     sub *A, B, 0
+056: 220d ;                    --  67:     jne testWin_test3end
+057: 80c5 ;                    --  68:     jmp testWin_retTrue
+058: 0e01 0005 ;               --  71:     mov [5], A
+05a: 4206 ;                    --  72:     addi A, 6, A
+05b: 0c50 ;                    --  73:     sub *A, B, 0
+05c: 2207 ;                    --  74:     jne testWin_test3end
+05d: 4201 ;                    --  75:     addi A, 1, A
+05e: 0c50 ;                    --  76:     sub *A, B, 0
+05f: 2204 ;                    --  77:     jne testWin_test3end
+060: 4201 ;                    --  78:     addi A, 1, A
+061: 0c50 ;                    --  79:     sub *A, B, 0
+062: 2201 ;                    --  80:     jne testWin_test3end
+063: 80c5 ;                    --  81:     jmp testWin_retTrue
+064: 0e01 0005 ;               --  83:     mov [5], A
+066: 420a ;                    --  84:     addi A, 10, A
+067: 0c03 ;                    --  85:     mov *A, C
+068: 2a04 ;                    --  86:     jez testWin_test4
+069: 6603 ;                    --  87:     subi C, 3, C
+06a: 2a02 ;                    --  88:     jez testWin_test4
+06b: 6603 ;                    --  89:     subi C, 3, C
+06c: 220b ;                    --  90:     jnz testWin_test4end
+06d: 0e01 0005 ;               --  92:     mov [5], A
+06f: 0c50 ;                    --  93:     sub *A, B, 0
+070: 222b ;                    --  94:     jne testWin_test6end
+071: 4203 ;                    --  95:     addi A, 3, A
+072: 0c50 ;                    --  96:     sub *A, B, 0
+073: 2228 ;                    --  97:     jne testWin_test6end
+074: 4203 ;                    --  98:     addi A, 3, A
+075: 0c50 ;                    --  99:     sub *A, B, 0
+076: 2225 ;                    -- 100:     jne testWin_test6end
+077: 80c5 ;                    -- 101:     jmp testWin_retTrue
+078: 4605 ;                    -- 103:     addi C, 5, C
+079: 2a04 ;                    -- 104:     jez testWin_test5
+07a: 6603 ;                    -- 105:     subi C, 3, C
+07b: 2a02 ;                    -- 106:     jez testWin_test5
+07c: 6603 ;                    -- 107:     subi C, 3, C
+07d: 220c ;                    -- 108:     jnz testWin_test5end
+07e: 0e01 0005 ;               -- 110:     mov [5], A
+080: 4201 ;                    -- 111:     addi A, 1, A
+081: 0c50 ;                    -- 112:     sub *A, B, 0
+082: 2219 ;                    -- 113:     jne testWin_test6end
+083: 4203 ;                    -- 114:     addi A, 3, A
+084: 0c50 ;                    -- 115:     sub *A, B, 0
+085: 2216 ;                    -- 116:     jne testWin_test6end
+086: 4203 ;                    -- 117:     addi A, 3, A
+087: 0c50 ;                    -- 118:     sub *A, B, 0
+088: 2213 ;                    -- 119:     jne testWin_test6end
+089: 80c5 ;                    -- 120:     jmp testWin_retTrue
+08a: 4605 ;                    -- 122:     addi C, 5, C
+08b: 2a04 ;                    -- 123:     jez testWin_test6
+08c: 6603 ;                    -- 124:     subi C, 3, C
+08d: 2a02 ;                    -- 125:     jez testWin_test6
+08e: 6603 ;                    -- 126:     subi C, 3, C
+08f: 220c ;                    -- 127:     jnz testWin_test6end
+090: 0e01 0005 ;               -- 129:     mov [5], A
+092: 4202 ;                    -- 130:     addi A, 2, A
+093: 0c50 ;                    -- 131:     sub *A, B, 0
+094: 2207 ;                    -- 132:     jne testWin_test6end
+095: 4203 ;                    -- 133:     addi A, 3, A
+096: 0c50 ;                    -- 134:     sub *A, B, 0
+097: 2204 ;                    -- 135:     jne testWin_test6end
+098: 4203 ;                    -- 136:     addi A, 3, A
+099: 0c50 ;                    -- 137:     sub *A, B, 0
+09a: 2201 ;                    -- 138:     jne testWin_test6end
+09b: 80c5 ;                    -- 139:     jmp testWin_retTrue
+09c: 0e01 0005 ;               -- 141:     mov [5], A
+09e: 420a ;                    -- 142:     addi A, 10, A
+09f: 0c03 ;                    -- 143:     mov *A, C
+0a0: 4703 ;                    -- 144:     andi C, 3, C
+0a1: 220b ;                    -- 145:     jnz testWin_test7end
+0a2: 0e01 0005 ;               -- 147:     mov [5], A
+0a4: 0c50 ;                    -- 148:     sub *A, B, 0
+0a5: 2207 ;                    -- 149:     jne testWin_test7end
+0a6: 4204 ;                    -- 150:     addi A, 4, A
+0a7: 0c50 ;                    -- 151:     sub *A, B, 0
+0a8: 2204 ;                    -- 152:     jne testWin_test7end
+0a9: 4204 ;                    -- 153:     addi A, 4, A
+0aa: 0c50 ;                    -- 154:     sub *A, B, 0
+0ab: 2201 ;                    -- 155:     jne testWin_test7end
+0ac: 80c5 ;                    -- 156:     jmp testWin_retTrue
+0ad: 0e01 0005 ;               -- 158:     mov [5], A
+0af: 420a ;                    -- 159:     addi A, 10, A
+0b0: 0c03 ;                    -- 160:     mov *A, C
+0b1: 6602 ;                    -- 161:     subi C, 2, C
+0b2: 2a04 ;                    -- 162:     jez testWin_test8
+0b3: 6602 ;                    -- 163:     subi C, 2, C
+0b4: 2a02 ;                    -- 164:     jez testWin_test8
+0b5: 6602 ;                    -- 165:     subi C, 2, C
+0b6: 220c ;                    -- 166:     jnz testWin_test8end
+0b7: 0e01 0005 ;               -- 168:     mov [5], A
+0b9: 4202 ;                    -- 169:     addi A, 2, A
+0ba: 0c50 ;                    -- 170:     sub *A, B, 0
+0bb: 2207 ;                    -- 171:     jne testWin_test8end
+0bc: 4202 ;                    -- 172:     addi A, 2, A
+0bd: 0c50 ;                    -- 173:     sub *A, B, 0
+0be: 2204 ;                    -- 174:     jne testWin_test8end
+0bf: 4202 ;                    -- 175:     addi A, 2, A
+0c0: 0c50 ;                    -- 176:     sub *A, B, 0
+0c1: 2201 ;                    -- 177:     jne testWin_test8end
+0c2: 80c5 ;                    -- 178:     jmp testWin_retTrue
+0c3: 0001 ;                    -- 181:     mov 0, A
+0c4: 3180 ;                    -- 182:     ret
+0c5: 0801 0001 ;               -- 184:     mov 1, A
+0c7: 3180 ;                    -- 185:     ret
+0c8: 3800 0001 ;               -- 189:     push 1
+0ca: 3e00 0005 ;               -- 190:     push [5]
+0cc: 3e00 0004 ;               -- 191:     push [4]
+0ce: 3100 ;                    -- 192:     call testWin
+0cf: 8034 ;                    -- 192:     call testWin
+0d0: 4003 ;                    -- 193:     addi SP, 3, SP
+0d1: 0200 ;                    -- 194:     mov A, 0
+0d2: 2a07 ;                    -- 195:     jez scoreGame_notXWin
+0d3: 2f80 0004 ;               -- 197:     save [4], @0
+0d5: 0e01 0005 ;               -- 198:     mov [5], A
+0d7: 4209 ;                    -- 199:     addi A, 9, A
+0d8: 0c01 ;                    -- 200:     mov *A, A
+0d9: 3180 ;                    -- 201:     ret
+0da: 3800 0002 ;               -- 203:     push 2
+0dc: 3e00 0005 ;               -- 204:     push [5]
+0de: 3e00 0004 ;               -- 205:     push [4]
+0e0: 3100 ;                    -- 206:     call testWin
+0e1: 8034 ;                    -- 206:     call testWin
+0e2: 4003 ;                    -- 207:     addi SP, 3, SP
+0e3: 0200 ;                    -- 208:     mov A, 0
+0e4: 2a08 ;                    -- 209:     jez scoreGame_notOWin
+0e5: 2f80 0004 ;               -- 211:     save [4], @0
+0e7: 0e01 0005 ;               -- 212:     mov [5], A
+0e9: 4209 ;                    -- 213:     addi A, 9, A
+0ea: 0c01 ;                    -- 214:     mov *A, A
+0eb: 0049 ;                    -- 215:     sub 0, A, A
+0ec: 3180 ;                    -- 216:     ret
+0ed: 0001 ;                    -- 218:     mov 0, A
+0ee: 3180 ;                    -- 219:     ret
+0ef: 3e00 0005 ;               -- 225:     push [5]
+0f1: 3e00 0004 ;               -- 226:     push [4]
+0f3: 3100 ;                    -- 227:     call scoreGame
+0f4: 80c8 ;                    -- 227:     call scoreGame
+0f5: 4002 ;                    -- 228:     addi SP, 2, SP
+0f6: 3200 ;                    -- 229:     push A ; [0] <= score
+0f7: 0200 ;                    -- 230:     mov A, 0
+0f8: 2208 ;                    -- 231:     jnz minimax_returnScore
+0f9: 2f80 0004 ;               -- 232:     save [4], @0
+0fb: 0e01 0005 ;               -- 233:     mov [5], A
+0fd: 4209 ;                    -- 234:     addi A, 9, A
+0fe: 0c01 ;                    -- 235:     mov *A, A
+0ff: 6209 ;                    -- 236:     subi A, 9, A
+100: 2202 ;                    -- 237:     jnz minimax_returnScoreEnd
+101: 3280 ;                    -- 239:     pop A ; A <= score
+102: 3180 ;                    -- 240:     ret
+103: 3800 ffff ;               -- 242:     push -1 ; [-1] <= bestMove
+105: 0e01 0006 ;               -- 243:     mov [6], A
+107: 6201 ;                    -- 244:     subi A, 1, A
+108: 2204 ;                    -- 245:     jnz minimax_bestScoreElse
+109: 0807 fff5 0000 ;          -- 246:     mov -11, [0]
+10c: 8110 ;                    -- 247:     jmp minimax_bestScoreIfEnd
+10d: 0807 000b 0000 ;          -- 249:     mov 11, [0]
+110: 2f80 0004 ;               -- 251:     save [4], @0
+112: 0e01 0005 ;               -- 252:     mov [5], A
+114: 420a ;                    -- 253:     addi A, 10, A
+115: 3c00 ;                    -- 254:     push *A ; [-2] <= prevMove
+116: 6201 ;                    -- 255:     subi A, 1, A
+117: 4c01 ;                    -- 256:     addi *A, 1, *A ; game->count++
+118: 3000 ;                    -- 257:     push 0 ; [-3] <= move
+119: 0e01 0005 ;               -- 259:     mov [5], A
+11b: 0e09 fffd ;               -- 260:     add [-3], A, A
+11d: 0c00 ;                    -- 261:     mov *A, 0
+11e: 2228 ;                    -- 262:     jnz minimax_for_inc
+11f: 0e06 0006 ;               -- 263:     mov [6], *A
+121: 0e01 0005 ;               -- 264:     mov [5], A
+123: 420a ;                    -- 265:     addi A, 10, A
+124: 0e06 fffd ;               -- 266:     mov [-3], *A
+126: 0e01 0006 ;               -- 267:     mov [6], A
+128: 6303 ;                    -- 268:     xori A, 3, A
+129: 3200 ;                    -- 269:     push A
+12a: 3e00 0005 ;               -- 270:     push [5]
+12c: 3e00 0004 ;               -- 271:     push [4]
+12e: 3100 ;                    -- 272:     call minimax
+12f: 80ef ;                    -- 272:     call minimax
+130: 4003 ;                    -- 273:     addi SP, 3, SP
+131: 0e02 0006 ;               -- 274:     mov [6], B
+133: 6401 ;                    -- 275:     subi B, 1, B
+134: 2204 ;                    -- 276:     jnz minimax_for_if_else
+135: 0e48 0000 ;               -- 277:     sub [0], A, 0
+137: 2c05 ;                    -- 278:     jlt minimax_for_if_save_score
+138: 8142 ;                    -- 279:     jmp minimax_for_if_end
+139: 0e03 0000 ;               -- 281:     mov [0], C
+13b: 0258 ;                    -- 282:     sub A, C, 0
+13c: 2405 ;                    -- 283:     jge minimax_for_if_end
+13d: 0207 0000 ;               -- 285:     mov A, [0]
+13f: 0e07 fffd ffff ;          -- 286:     mov [-3], [-1]
+142: 0e01 0005 ;               -- 288:     mov [5], A
+144: 0e09 fffd ;               -- 289:     add [-3], A, A
+146: 0006 ;                    -- 290:     mov 0, *A
+147: 0e03 fffd ;               -- 292:     mov [-3], C
+149: 6608 ;                    -- 293:     subi C, 8, C
+14a: 2a04 ;                    -- 294:     jez minimax_for_end
+14b: 4609 ;                    -- 295:     addi C, 9, C
+14c: 0607 fffd ;               -- 296:     mov C, [-3]
+14e: 8119 ;                    -- 297:     jmp minimax_for
+14f: 0e01 0005 ;               -- 299:     mov [5], A
+151: 4209 ;                    -- 300:     addi A, 9, A
+152: 6c01 ;                    -- 301:     subi *A, 1, *A
+153: 4201 ;                    -- 302:     addi A, 1, A
+154: 0e05 ffff 1000 0080 ;     -- 303:     mov [-1], *choice
+158: 0e06 fffe ;               -- 304:     mov [-2], *A
+15a: 0e01 0000 ;               -- 305:     mov [0], A
+15c: 4004 ;                    -- 306:     addi SP, 4, SP
+15d: 3180 ;                    -- 307:     ret
+-- "lcd.rcpu"
+15e: 3800 0038 ;               --   6:     push 38h
+160: 3100 ;                    --   7:     call lcd_cmd
+161: 8189 ;                    --   7:     call lcd_cmd
+162: 3800 000f ;               --   8:     push 0Fh
+164: 3100 ;                    --   9:     call lcd_cmd
+165: 8189 ;                    --   9:     call lcd_cmd
+166: 3800 0001 ;               --  10:     push 01h
+168: 3100 ;                    --  11:     call lcd_cmd
+169: 8189 ;                    --  11:     call lcd_cmd
+16a: 3800 0006 ;               --  12:     push 06h
+16c: 3100 ;                    --  13:     call lcd_cmd
+16d: 8189 ;                    --  13:     call lcd_cmd
+16e: 4004 ;                    --  14:     addi SP, 4, SP
+16f: 0005 1000 0f00 ;          --  15:     mov 0, *lcd_row
+172: 0005 1000 0f01 ;          --  16:     mov 0, *lcd_column
+175: 0805 0001 1000 0f02 ;     --  17:     mov 1, *lcd_testrowcol
+179: 3180 ;                    --  18:     ret
+17a: 0e01 0005 ;               --  23:     mov [5], A
+17c: 2f80 0004 ;               --  25:     save [4], @0
+17e: 0c02 ;                    --  26:     mov *A, B
+17f: 2a08 ;                    --  27:     jeq lcd_prints_while1_end
+180: 3200 ;                    --  28:     push A
+181: 3400 ;                    --  29:     push B
+182: 3100 ;                    --  30:     call lcd_putc
+183: 81aa ;                    --  30:     call lcd_putc
+184: 4001 ;                    --  31:     addi SP, 1, SP
+185: 3280 ;                    --  32:     pop A
+186: 4201 ;                    --  33:     addi A, 1, A
+187: 817c ;                    --  34:     jmp lcd_prints_while1
+188: 3180 ;                    --  36:     ret
+189: 0005 ffff fffd ;          --  39:     mov 0, *int_enable
+18c: 0e01 0004 ;               --  40:     mov [4], A
+18e: 0205 ffff 0000 ;          --  41:     mov A, *lcd_data
+191: 0005 ffff 0001 ;          --  42:     mov 0, *lcd_ctrl
+194: 0805 0001 ffff 0001 ;     --  43:     mov 1, *lcd_ctrl
+198: 0005 ffff 0001 ;          --  44:     mov 0, *lcd_ctrl
+19b: 6204 ;                    --  45:     subi A, 4, A
+19c: 2404 ;                    --  46:     jge lcd_cmd_if1_end
+19d: 0803 00b5 ;               --  47:     mov 181, C
+19f: 6601 ;                    --  49:     subi C, 1, C
+1a0: 24fe ;                    --  50:     jge lcd_cmd_do_while1
+1a1: 0805 0004 ffff 0001 ;     --  52:     mov 4, *lcd_ctrl
+1a5: 0805 0001 ffff fffd ;     --  53:     mov 1, *int_enable
+1a9: 3180 ;                    --  54:     ret
+1aa: 0005 ffff fffd ;          --  57:     mov 0, *int_enable
+1ad: 0e05 0004 ffff 0000 ;     --  58:     mov [4], *lcd_data
+1b1: 0805 0005 ffff 0001 ;     --  59:     mov 5, *lcd_ctrl
+1b5: 0805 0004 ffff 0001 ;     --  60:     mov 4, *lcd_ctrl
+1b9: 0a00 1000 0f02 ;          --  61:     mov *lcd_testrowcol, 0
+1bc: 2a02 ;                    --  62:     jez lcd_putc_if1_end
+1bd: 3100 ;                    --  63:     call lcd_add1rowcol
+1be: 81c4 ;                    --  63:     call lcd_add1rowcol
+1bf: 0805 0001 ffff fffd ;     --  65:     mov 1, *int_enable
+1c3: 3180 ;                    --  66:     ret
+1c4: 0a02 1000 0f01 ;          --  69:     mov *lcd_column, B
+1c7: 6413 ;                    --  70:     subi B, 19, B
+1c8: 2a05 ;                    --  71:     jez lcd_add1rowcol_if1_end
+1c9: 4414 ;                    --  72:     addi B, 20, B
+1ca: 0405 1000 0f01 ;          --  73:     mov B, *lcd_column
+1cd: 3180 ;                    --  74:     ret
+1ce: 0005 1000 0f01 ;          --  76:     mov 0, *lcd_column
+1d1: 0a02 1000 0f00 ;          --  77:     mov *lcd_row, B
+1d4: 6403 ;                    --  78:     subi B, 3, B
+1d5: 2a22 ;                    --  79:     jez lcd_add1rowcol_if2_end
+1d6: 4404 ;                    --  80:     addi B, 4, B
+1d7: 0811 022a ;               --  81:     add lcd_rowsetcmdtable.l, B, A
+1d9: 0405 1000 0f00 ;          --  82:     mov B, *lcd_row
+1dc: 2180 ;                    --  83:     save lcd_rowsetcmdtable.h, @0
+1de: 0c01 ;                    --  84:     mov *A, A
+1df: 3200 ;                    --  85:     push A
+1e0: 3200 ;                    --  86:     push A
+1e1: 3100 ;                    --  87:     call lcd_cmd
+1e2: 8189 ;                    --  87:     call lcd_cmd
+1e3: 0005 1000 0f02 ;          --  88:     mov 0, *lcd_testrowcol
+1e6: 0802 0014 ;               --  89:     mov 20, B
+1e8: 2a06 ;                    --  91:     jez lcd_add1rowcol_for1_end
+1e9: 3800 0020 ;               --  92:     push ' '
+1eb: 3100 ;                    --  93:     call lcd_putc
+1ec: 81aa ;                    --  93:     call lcd_putc
+1ed: 6401 ;                    --  94:     subi B, 1, B
+1ee: 81e8 ;                    --  95:     jmp lcd_add1rowcol_for1
+1ef: 0805 0001 1000 0f02 ;     --  97:     mov 1, *lcd_testrowcol
+1f3: 4015 ;                    --  98:     addi SP, 21, SP
+1f4: 3100 ;                    --  99:     call lcd_cmd
+1f5: 8189 ;                    --  99:     call lcd_cmd
+1f6: 4001 ;                    -- 100:     addi SP, 1, SP
+1f7: 3180 ;                    -- 101:     ret
+1f8: 0005 1000 0f00 ;          -- 103:     mov 0, *lcd_row
+1fb: 0005 1000 0f02 ;          -- 104:     mov 0, *lcd_testrowcol
+1fe: 3800 0080 ;               -- 105:     push 80h
+200: 3100 ;                    -- 106:     call lcd_cmd
+201: 8189 ;                    -- 106:     call lcd_cmd
+202: 0802 0014 ;               -- 107:     mov 20, B
+204: 2a06 ;                    -- 109:     jez lcd_add1rowcol_for2_end
+205: 3800 0020 ;               -- 110:     push ' '
+207: 3100 ;                    -- 111:     call lcd_putc
+208: 81aa ;                    -- 111:     call lcd_putc
+209: 6401 ;                    -- 112:     subi B, 1, B
+20a: 8204 ;                    -- 113:     jmp lcd_add1rowcol_for2
+20b: 0805 0001 1000 0f02 ;     -- 115:     mov 1, *lcd_testrowcol
+20f: 3800 0080 ;               -- 116:     push 80h
+211: 3100 ;                    -- 117:     call lcd_cmd
+212: 8189 ;                    -- 117:     call lcd_cmd
+213: 4016 ;                    -- 118:     addi SP, 22, SP
+214: 3180 ;                    -- 119:     ret
+215: 0e01 0004 ;               -- 122:     mov [4], A
+217: 2180 ;                    -- 123:     save lcd_rowsetcmdtable.h, @0
+219: 0809 022a ;               -- 124:     add lcd_rowsetcmdtable.l, A, A
+21b: 0e02 0005 ;               -- 125:     mov [5], B
+21d: 0c11 ;                    -- 126:     add *A, B, A
+21e: 3200 ;                    -- 127:     push A
+21f: 3100 ;                    -- 128:     call lcd_cmd
+220: 8189 ;                    -- 128:     call lcd_cmd
+221: 4001 ;                    -- 129:     addi SP, 1, SP
+222: 0e05 0004 1000 0f00 ;     -- 130:     mov [4], *lcd_row
+226: 0405 1000 0f01 ;          -- 131:     mov B, *lcd_column
+229: 3180 ;                    -- 132:     ret
+22a: 0080 ;                    -- 141:     dw 80h
+22b: 00c0 ;                    -- 142:     dw C0h
+22c: 0094 ;                    -- 143:     dw 94h
+22d: 00d4 ;                    -- 144:     dw D4h
+-- "tictactoe.rcpu"
+22e: 007c 0020 0020 0020 007c 0000 ; -- 312:     dw "|   |"
+234: 0074 0075 0072 006e 0000 ; -- 314:     dw "turn"
+239: 0059 006f 0075 0072 0000 ; -- 316:     dw "Your"
+23e: 0052 0043 0050 0055 0000 ; -- 318:     dw "RCPU"
+243: 3100 ;                    -- 323:     call lcd_init
+244: 815e ;                    -- 323:     call lcd_init
+245: 3000 ;                    -- 324:     push 0 ; [0] <= i
+246: 3800 0007 ;               -- 326:     push 7
+248: 3e00 0000 ;               -- 327:     push [0]
+24a: 3100 ;                    -- 328:     call lcd_setrowcol
+24b: 8215 ;                    -- 328:     call lcd_setrowcol
+24c: 3800 022e ;               -- 329:     push board.l
+24e: 3000 ;                    -- 330:     push board.h
+250: 3100 ;                    -- 331:     call lcd_prints
+251: 817a ;                    -- 331:     call lcd_prints
+252: 4004 ;                    -- 332:     addi SP, 4, SP
+253: 0e03 0000 ;               -- 333:     mov [0], C
+255: 6602 ;                    -- 334:     subi C, 2, C
+256: 2a04 ;                    -- 335:     jez gui_for1_end
+257: 081f 0003 0000 ;          -- 336:     add 3, C, [0]
+25a: 8246 ;                    -- 337:     jmp gui_for1
+25b: 4001 ;                    -- 339:     addi SP, 1, SP
+25c: 3800 0005 ;               -- 340:     push 5
+25e: 3800 0003 ;               -- 341:     push 3
+260: 3100 ;                    -- 342:     call lcd_setrowcol
+261: 8215 ;                    -- 342:     call lcd_setrowcol
+262: 3800 0239 ;               -- 343:     push your.l
+264: 3000 ;                    -- 344:     push your.h
+266: 3100 ;                    -- 345:     call lcd_prints
+267: 817a ;                    -- 345:     call lcd_prints
+268: 3800 000b ;               -- 346:     push 11
+26a: 3800 0003 ;               -- 347:     push 3
+26c: 3100 ;                    -- 348:     call lcd_setrowcol
+26d: 8215 ;                    -- 348:     call lcd_setrowcol
+26e: 3800 0234 ;               -- 349:     push turn.l
+270: 3000 ;                    -- 350:     push turn.h
+272: 3100 ;                    -- 351:     call lcd_prints
+273: 817a ;                    -- 351:     call lcd_prints
+274: 4008 ;                    -- 352:     addi SP, 8, SP
+275: 0001 ;                    -- 353:     mov game.l, A
+277: 0803 000a ;               -- 354:     mov 10, C
+279: 2980 1000 ;               -- 355:     save game.h, @0
+27b: 0006 ;                    -- 357:     mov 0, *A
+27c: 4201 ;                    -- 358:     addi A, 1, A
+27d: 6601 ;                    -- 359:     subi C, 1, C
+27e: 22fc ;                    -- 360:     jnz gui_for2
+27f: 0005 1000 0081 ;          -- 362:     mov 0, *player
+282: 3180 ;                    -- 363:     ret
+283: 2f80 0004 ;               -- 367:     save [4], @0
+285: 0e01 0005 ;               -- 368:     mov [5], A
+287: 4209 ;                    -- 369:     addi A, 9, A
+288: 0c02 ;                    -- 370:     mov *A, B
+289: 2204 ;                    -- 371:     jnz solve_test0_end
+28a: 0005 1000 0080 ;          -- 373:     mov 0, *choice
+28d: 3180 ;                    -- 374:     ret
+28e: 6401 ;                    -- 376:     subi B, 1, B
+28f: 2209 ;                    -- 377:     jnz solve_test1_end
+290: 4201 ;                    -- 378:     addi A, 1, A
+291: 0c02 ;                    -- 379:     mov *A, B
+292: 6404 ;                    -- 380:     subi B, 4, B
+293: 2af6 ;                    -- 381:     jez solve_ret0
+294: 0805 0004 1000 0080 ;     -- 383:     mov 4, *choice
+298: 3180 ;                    -- 384:     ret
+299: 6401 ;                    -- 386:     subi B, 1, B
+29a: 2218 ;                    -- 387:     jnz solve_test2_end
+29b: 4201 ;                    -- 388:     addi A, 1, A
+29c: 0c02 ;                    -- 389:     mov *A, B
+29d: 6403 ;                    -- 390:     subi B, 3, B
+29e: 2405 ;                    -- 391:     jge solve_test2_skip3
+29f: 0805 0003 1000 0080 ;     -- 392:     mov 3, *choice
+2a3: 3180 ;                    -- 393:     ret
+2a4: 6402 ;                    -- 395:     subi B, 2, B
+2a5: 2405 ;                    -- 396:     jge solve_test2_skip1
+2a6: 0805 0001 1000 0080 ;     -- 398:     mov 1, *choice
+2aa: 3180 ;                    -- 399:     ret
+2ab: 2ae8 ;                    -- 401:     jez solve_ret4
+2ac: 6401 ;                    -- 402:     subi B, 1, B
+2ad: 2af8 ;                    -- 403:     jez solve_ret1
+2ae: 0805 0002 1000 0080 ;     -- 404:     mov 2, *choice
+2b2: 3180 ;                    -- 405:     ret
+2b3: 80ef ;                    -- 407:     jmp minimax
+END;
