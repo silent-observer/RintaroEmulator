@@ -34,7 +34,7 @@ void main(string[] args)
         }
         switch (cmd[0]) {
             case "exit": return;
-            case "load": 
+            case "load":
                 if (cmd.length != 2) {
                     writeln(stderr, "Usage: load <.mif file>");
                     break;
@@ -48,7 +48,7 @@ void main(string[] args)
                 writeln(rcpu.reportState);
                 break;
 
-            case "run": 
+            case "run":
             if (cmd.length > 2) {
                 writeln(stderr, "Usage: run [<instruction count>]");
                 break;
@@ -61,7 +61,7 @@ void main(string[] args)
                     rcpu.executeInstruction();
                     if (ram.stopFlag) {
                         import std.conv : to;
-                        writefln("Breakpoint encountered after %s instructions! %s %08X", 
+                        writefln("Breakpoint encountered after %s instructions! %s %08X",
                             i, ram.emulatorBPRW? "Write to" : "Read from", ram.lastEmulatorBP);
                         ram.stopFlag = false;
                         break;
@@ -71,7 +71,7 @@ void main(string[] args)
                 break;
             }
 
-            case "log": 
+            case "log":
             if (cmd.length > 2) {
                 writeln(stderr, "Usage: log [<instruction count>]");
                 break;
@@ -85,7 +85,7 @@ void main(string[] args)
                     if (i != count - 1) writeln();
                     if (ram.stopFlag) {
                         import std.conv : to;
-                        writefln("Breakpoint encountered after %s instructions! %s %08X", 
+                        writefln("Breakpoint encountered after %s instructions! %s %08X",
                             i, ram.emulatorBPRW? "Write to" : "Read from", ram.lastEmulatorBP);
                         ram.stopFlag = false;
                         break;
@@ -95,7 +95,7 @@ void main(string[] args)
                 break;
             }
 
-            case "read": 
+            case "read":
             if (cmd.length != 2 && cmd.length != 3) {
                 writeln(stderr, "Usage: read <start address> [<end address>]");
                 break;
@@ -109,7 +109,7 @@ void main(string[] args)
                 break;
             }
 
-            case "write": 
+            case "write":
             if (cmd.length != 3 && cmd.length != 4) {
                 writeln(stderr, "Usage: write <start address> [<end address>] <data>");
                 break;
@@ -126,7 +126,7 @@ void main(string[] args)
 
             case "stack": {
                 isLogging = false;
-                uint endAddr = rcpu.sp < 0xFFE0 ? 0xD000001F + rcpu.sp : 0xD000FFFF;  
+                uint endAddr = rcpu.sp < 0xFFE0 ? 0xD000001F + rcpu.sp : 0xD000FFFF;
                 for (uint i = 0xD0000000 + rcpu.sp; i <= endAddr; i++) {
                     writef("%08X: %04X", i, ram.memRead(i));
                     if ((i & 0xFFFF) == rcpu.fp - 2) writef(" <- [-2]");
@@ -143,7 +143,9 @@ void main(string[] args)
                 break;
             }
 
-            case "reset": rcpu.reset(); break;
+            case "reset":
+                rcpu.reset();
+                break;
 
             case "bpadd": if (cmd.length != 2) {
                 writeln(stderr, "Usage: bpadd <address>");
@@ -171,12 +173,29 @@ void main(string[] args)
 
             case "lcd": writeln(lcd); break;
 
-            case "help": 
+            case "ir": if (cmd.length != 2) {
+                writeln(stderr, "Usage: ir <number>");
+                break;
+            } else {
+                ram.irInterrupt(cast(ubyte) cmd[1].getInt);
+                break;
+            }
+            case "key": if (cmd.length != 2) {
+                writeln(stderr, "Usage: key <code>");
+                break;
+            } else {
+                ram.keyInterrupt(cast(ubyte) cmd[1].getInt);
+                break;
+            }
+
+            case "help":
                 writeln("bpadd <address> -- Add emulator breakpoint");
                 writeln("bplist -- List all emulator breakpoints");
                 writeln("bpremove <address> -- Remove emulator breakpoint");
                 writeln("exit -- Exit from emulator");
                 writeln("help -- Show this text");
+                writeln("ir <number> -- Press number key on the IR remote");
+                writeln("key <code> -- Press key on the keyboard");
                 writeln("lcd -- Show LCD content");
                 writeln("load <.mif file> -- Load file to ROM");
                 writeln("log [<instruction count>] -- Execute instructions with logging");
@@ -188,7 +207,7 @@ void main(string[] args)
                 writeln("write <start address> [<end address>] <data> -- Write data to memory");
                 break;
 
-            default: writeln("Invalid instruction \"", cmd[0], 
+            default: writeln("Invalid instruction \"", cmd[0],
                 "\", use \"help\" command to see all available instructions."); break;
         }
     }
@@ -202,6 +221,7 @@ private void log(string s) {
 private RAM loadFile(string filename, RCPU rcpu, LCD lcd) {
     RAM ram = new RAM(filename, &log);
     ram.setLCD(lcd);
+    ram.setInterruptCallback(&rcpu.interrupt);
     rcpu.setRAM(ram);
     writeln("File ", filename, " has been successfully loaded!");
     return ram;

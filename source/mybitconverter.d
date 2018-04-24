@@ -2,7 +2,7 @@ module mybitconverter;
 import std.traits;
 
 
-public bool getBit(T)(T value, int bitNumber) 
+public bool getBit(T)(T value, int bitNumber)
 if (isIntegral!T) {
     return cast(T) ((value >> bitNumber) & 1);
 } unittest
@@ -28,7 +28,7 @@ if (isIntegral!T) {
     assert((0x1234).getBit(15) == 0);
 }
 
-public T getBits(T)(T value, int bitStart, int bitEnd) 
+public T getBits(T)(T value, int bitStart, int bitEnd)
 if (isIntegral!T){
     return cast(T) ((value >> bitStart) & ((1 << (bitEnd - bitStart)) - 1));
 } unittest
@@ -48,7 +48,7 @@ if (isIntegral!T){
     assert((0x1234).getBits(0, 16) == 0x1234);
 }
 
-public void setBit(T)(ref T value, int bitNumber, bool bitValue) 
+public void setBit(T)(ref T value, int bitNumber, bool bitValue)
 if (isIntegral!T){
     value = (value & ~(1 << bitNumber)) | (bitValue << bitNumber);
 } unittest
@@ -66,7 +66,7 @@ if (isIntegral!T){
     assert (value.getBit(0) == 1);
 }
 
-public void setBits(T)(ref T value, int bitStart, int bitEnd, T bitValues) 
+public void setBits(T)(ref T value, int bitStart, int bitEnd, T bitValues)
 if (isIntegral!T){
     T bitMask = (T.max << bitStart) & ~(T.max << bitEnd);
     value = (value & ~bitMask) | ((bitValues << bitStart) & bitMask);
@@ -79,7 +79,7 @@ if (isIntegral!T){
     assert (value.getBits(3, 11) == 0x5C);
 }
 
-public T setBitNoRef(T)(T value, int bitNumber, bool bitValue) 
+public T setBitNoRef(T)(T value, int bitNumber, bool bitValue)
 if (isIntegral!T){
     return cast(T) ((value & ~(1 << bitNumber)) | (bitValue << bitNumber));
 }
@@ -98,7 +98,7 @@ unittest
     assert (value.getBit(0) == 1);
 }
 
-public T setBitsNoRef(T)(T value, int bitStart, int bitEnd, T bitValues) 
+public T setBitsNoRef(T)(T value, int bitStart, int bitEnd, T bitValues)
 if (isIntegral!T){
     T bitMask = cast(T) ((T.max << bitStart) & ~(T.max << bitEnd));
     return cast(T) ((value & ~bitMask) | ((bitValues << bitStart) & bitMask));
@@ -109,4 +109,22 @@ if (isIntegral!T){
     assert (value.getBits(0, 4) == 0x4);
     value = value.setBitsNoRef(3, 11, 0x5C);
     assert (value.getBits(3, 11) == 0x5C);
+}
+
+public T signedExtend(T)(T value, int bitCount)
+if (isIntegral!T) {
+    if (value.getBit(bitCount-1))
+        return cast(T) ((-1 << bitCount) | value);
+    else
+        return value;
+} unittest
+{
+    assert((0x0034).signedExtend(ushort)(8) == 0x0034);
+    assert((0x00A4).signedExtend(ushort)(8) == 0xFFA4);
+
+    assert((0x0734).signedExtend(ushort)(12) == 0x0734);
+    assert((0x0834).signedExtend(ushort)(12) == 0xF834);
+
+    assert((0x0334).signedExtend(ushort)(11) == 0x0334);
+    assert((0x0734).signedExtend(ushort)(11) == 0xFF34);
 }

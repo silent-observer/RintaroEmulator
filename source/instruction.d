@@ -1,6 +1,6 @@
 module instruction;
 
-enum InstructionType {a, j, i, si, f, ls, sp}
+enum InstructionType {a, j, jr, i, si, f, ls, sp}
 
 class InvalidInstructionException : Exception
 {
@@ -28,9 +28,13 @@ public Instruction decodeInstruction (ushort instr) pure {
         result.opcode = cast(ubyte) instr.getBits(5, 9);
         result.a2 = instr.getBits(3, 5);
         result.a3 = instr.getBits(0, 3);
-    } else if (instr.getBit(15) == 1) {
+    } else if (instr.getBits(14, 16) == 0b11) {
         result.type = InstructionType.j;
-        result.a1 = instr.getBits(0, 15);
+        result.opcode = cast(ubyte) instr.getBit(13);
+        result.a1 = instr.getBits(0, 13).signedExtend(13);
+    } else if (instr.getBits(12, 16) == 0b1000) {
+        result.type = InstructionType.jr;
+        result.a1 = instr.getBits(9, 12);
     } else if (instr.getBits(14, 16) == 0b01) {
         result.type = InstructionType.i;
         result.opcode = cast(ubyte) ((instr.getBits(12, 14) << 1) | instr.getBits(8, 9));
@@ -46,7 +50,7 @@ public Instruction decodeInstruction (ushort instr) pure {
         result.type = InstructionType.f;
         result.opcode = cast(ubyte) instr.getBit(11);
         result.a1 = instr.getBits(9, 11);
-        result.a2 = instr.getBits(0, 8);
+        result.a2 = instr.getBits(0, 8).signedExtend(8);
     } else if (instr.getBits(12, 16) == 0b0010 && instr.getBit(8) == 1) {
         result.type = InstructionType.ls;
         result.a1 = instr.getBits(9, 12);
@@ -70,9 +74,14 @@ public Instruction decodeInstruction (ushort instr) pure {
     assert(instr.a2 == 0b01);
     assert(instr.a3 == 0b001);
 
-    instr = decodeInstruction(0b1_000_0010_0100_1101);
+    instr = decodeInstruction(0b11_0_0_0010_0100_1101);
     assert(instr.type == InstructionType.j);
+    assert(instr.opcode == 0b0);
     assert(instr.a1 == 0x024D);
+
+    instr = decodeInstruction(0b1000_001_0_0000_0000);
+    assert(instr.type == InstructionType.jr);
+    assert(instr.a1 == 0b001);
 
     instr = decodeInstruction(0b01_00_001_1_00101001);
     assert(instr.type == InstructionType.i);

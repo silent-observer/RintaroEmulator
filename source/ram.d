@@ -14,15 +14,16 @@ alias LogCallback = void function(string);
 class RAM
 {
 private:
-    ushort[romSize] rom; 
+    ushort[romSize] rom;
     ushort[stackSize] stack;
     ushort[heapSize] heap;
-    ushort[128] fastMem;
+    ushort[16] fastMem;
 
-    string[romSize] romComments; 
+    string[romSize] romComments;
 
     void delegate (ushort) lcdDataWrite;
     void delegate (ushort) lcdCtrlWrite;
+    void delegate (uint, ubyte) interrupt;
 
     uint keyboardAddr, irAddr, bpAddr;
     bool keyboardEn, irEn, bp0En, bp1En, bp2En, bp3En;
@@ -73,10 +74,10 @@ public:
             return;
         }
         else if (addr >= 0xFFFF1000 && addr <= 0xFFFF107F) { // Fast memory
-            fastMem[addr%128] = value;
+            fastMem[addr%16] = value;
             return;
         }
-        else 
+        else
         switch (addr) {
             case 0xFFFF0000: lcdDataWrite(value & 0xFF); break;
             case 0xFFFF0001: lcdCtrlWrite(value & 0x7); break;
@@ -118,11 +119,32 @@ public:
         if (addr >= 0x00000000 && addr <= 0x000FFFFF) value = rom[addr%romSize]; // ROM
         else if (addr >= 0xD0000000 && addr <= 0xD000FFFF) value = stack[addr%stackSize]; // Stack
         else if (addr >= 0x10000000 && addr <= 0x8FFFFFFF) value = heap[addr%heapSize]; // Heap
-        else if (addr >= 0xFFFF1000 && addr <= 0xFFFF107F) value = fastMem[addr%128]; // Fast memory
+        else if (addr >= 0xFFFF1000 && addr <= 0xFFFF100F) value = fastMem[addr%16]; // Fast memory
 
         log(format("*%08X -> %04X", addr, value));
 
         return value;
+    }
+    void reset() {
+        stack[] = 0;
+        heap[] = 0;
+        fastMem[] = 0;
+
+        keyboardAddr = 0;
+        irAddr = 0;
+        bpAddr = 0;
+
+        keyboardEn = false;
+        irEn = false;
+        bp0En = false;
+        bp1En = false;
+        bp2En = false;
+        bp3En = false;
+
+        bp0Addr = 0;
+        bp1Addr = 0;
+        bp2Addr = 0;
+        bp3Addr = 0;
     }
 
     string getComments(uint addr) pure const{
@@ -136,6 +158,19 @@ public:
     void setLCD(LCD lcd) {
         lcdDataWrite = &lcd.writeData;
         lcdCtrlWrite = &lcd.writeCtrl;
+    }
+
+    void setInterruptCallback(void delegate (uint, ubyte) interrupt) {
+        this.interrupt = interrupt;
+    }
+
+    void irInterrupt(ubyte number) {
+        if (irEn)
+            interrupt(irAddr, number);
+    }
+    void keyInterrupt(ubyte code) {
+        if (keyboardEn)
+            interrupt(keyboardAddr, code);
     }
 
     uint[] emulatorBP;
