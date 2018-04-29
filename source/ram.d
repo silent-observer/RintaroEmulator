@@ -51,58 +51,161 @@ public:
             auto comments = spl[1..$].join("--");
             foreach(word; spl[0].split[0..$-1]) {
                 romComments[addr] = comments;
-                rom[addr++] = word.to!ushort(16);
+                rom[addr] = word.to!ushort(16);
+                addr++;
             }
         }
     }
-    void memWrite (uint addr, ushort value) {
+    void memWrite (uint addr, ushort value, ubyte inMask = 0x3, ubyte outMask = 0x3) {
         import mybitconverter;
         import std.algorithm : canFind;
-        log(format("*%08X <- %04X", addr, value));
+        if (inMask != 0x3 || outMask != 0x3)
+            log(format("*%08X[%02b] <- %04X[%02b]", addr, outMask, value, inMask));
+        else
+            log(format("*%08X <- %04X", addr, value));
+        if (inMask == 0x1)
+            value = value & 0x00FF;
+        else if (inMask == 0x2)
+            value = value >> 8;
         if (emulatorBP.canFind(addr)) {
             stopFlag = true;
             lastEmulatorBP = addr;
             emulatorBPRW = true;
         }
+        if ((addr & 0x1) == 0x1) {
+            addr ^= 0x1;
+            outMask ^= 0x3;
+        }
+        uint realAddr = addr >> 1;
         if (addr >= 0x00000000 && addr <= 0x000FFFFF) return; // ROM
         else if (addr >= 0xD0000000 && addr <= 0xD000FFFF) { // Stack
-            stack[addr%stackSize] = value;
+            stack[realAddr%stackSize].maskWithRef(value, outMask);
             return;
         }
         else if (addr >= 0x10000000 && addr <= 0x8FFFFFFF) { // Heap
-            heap[addr%heapSize] = value;
+            heap[realAddr%heapSize].maskWithRef(value, outMask);
             return;
         }
-        else if (addr >= 0xFFFF1000 && addr <= 0xFFFF107F) { // Fast memory
-            fastMem[addr%16] = value;
+        else if (addr >= 0xFFFF1000 && addr <= 0xFFFF101F) { // Fast memory
+            fastMem[realAddr%16].maskWithRef(value, outMask);
             return;
         }
         else
         switch (addr) {
-            case 0xFFFF0000: lcdDataWrite(value & 0xFF); break;
-            case 0xFFFF0001: lcdCtrlWrite(value & 0x7); break;
+            case 0xFFFF0000:
+                if (outMask == 0x1)
+                    lcdDataWrite(value & 0xFF);
+                else if (outMask == 0x2)
+                    lcdCtrlWrite(value & 0x7);
+                else {
+                    lcdDataWrite(value & 0xFF);
+                    lcdCtrlWrite((value >> 8) & 0x7);
+                }
+                break;
 
-            case 0xFFFFFFFA: irEn = value > 0; break;
-            case 0xFFFFFFFB: irAddr.setBits(0, 16, value); break;
-            case 0xFFFFFFFC: irAddr.setBits(16, 32, value); break;
-            case 0xFFFFFFFD: keyboardEn = value > 0; break;
-            case 0xFFFFFFFE: keyboardAddr.setBits(0, 16, value); break;
-            case 0xFFFFFFFF: keyboardAddr.setBits(16, 32, value); break;
+            case 0xFFFFFFF6:
+                if (outMask == 0x1)
+                    irEn = value != 0;
+                else if (outMask == 0x2)
+                    keyboardEn = value != 0;
+                else {
+                    irEn = (value && 0x00FF) != 0;
+                    keyboardEn = (value && 0xFF00) != 0;
+                }
+                break;
+            case 0xFFFFFFF8: {
+                ushort bits = cast(ushort) irAddr.getBits(0, 16);
+                bits.maskWithRef(value, outMask);
+                irAddr.setBits(0, 16, bits);
+                break;
+            }
+            case 0xFFFFFFFA: {
+                ushort bits = cast(ushort) irAddr.getBits(16, 32);
+                bits.maskWithRef(value, outMask);
+                irAddr.setBits(16, 32, bits);
+                break;
+            }
+            case 0xFFFFFFFC: {
+                ushort bits = cast(ushort) keyboardAddr.getBits(0, 16);
+                bits.maskWithRef(value, outMask);
+                keyboardAddr.setBits(0, 16, bits);
+                break;
+            }
+            case 0xFFFFFFFE: {
+                ushort bits = cast(ushort) keyboardAddr.getBits(16, 32);
+                bits.maskWithRef(value, outMask);
+                keyboardAddr.setBits(16, 32, bits);
+                break;
+            }
 
-            case 0xFFFFF000: bp0En = value > 0; break;
-            case 0xFFFFF001: bp0Addr.setBits(0, 16, value); break;
-            case 0xFFFFF002: bp0Addr.setBits(16, 32, value); break;
-            case 0xFFFFF003: bp1En = value > 0; break;
-            case 0xFFFFF004: bp1Addr.setBits(0, 16, value); break;
-            case 0xFFFFF005: bp1Addr.setBits(16, 32, value); break;
-            case 0xFFFFF006: bp2En = value > 0; break;
-            case 0xFFFFF007: bp2Addr.setBits(0, 16, value); break;
-            case 0xFFFFF008: bp2Addr.setBits(16, 32, value); break;
-            case 0xFFFFF009: bp3En = value > 0; break;
-            case 0xFFFFF00A: bp3Addr.setBits(0, 16, value); break;
-            case 0xFFFFF00B: bp3Addr.setBits(16, 32, value); break;
-            case 0xFFFFF00C: bpAddr.setBits(0, 16, value); break;
-            case 0xFFFFF00D: bpAddr.setBits(16, 32, value); break;
+            case 0xFFFFF000:
+                if (outMask != 0x10) {
+                    bp0En = (value & 0x1) != 0;
+                    bp1En = (value & 0x2) != 0;
+                    bp2En = (value & 0x4) != 0;
+                    bp3En = (value & 0x8) != 0;
+                }
+                break;
+            case 0xFFFFF002: {
+                ushort bits = cast(ushort) bp0Addr.getBits(0, 16);
+                bits.maskWithRef(value, outMask);
+                bp0Addr.setBits(0, 16, bits);
+                break;
+            }
+            case 0xFFFFF004: {
+                ushort bits = cast(ushort) bp0Addr.getBits(16, 32);
+                bits.maskWithRef(value, outMask);
+                bp0Addr.setBits(16, 32, bits);
+                break;
+            }
+            case 0xFFFFF006: {
+                ushort bits = cast(ushort) bp1Addr.getBits(0, 16);
+                bits.maskWithRef(value, outMask);
+                bp1Addr.setBits(0, 16, bits);
+                break;
+            }
+            case 0xFFFFF008: {
+                ushort bits = cast(ushort) bp1Addr.getBits(16, 32);
+                bits.maskWithRef(value, outMask);
+                bp1Addr.setBits(16, 32, bits);
+                break;
+            }
+            case 0xFFFFF00A: {
+                ushort bits = cast(ushort) bp2Addr.getBits(0, 16);
+                bits.maskWithRef(value, outMask);
+                bp2Addr.setBits(0, 16, bits);
+                break;
+            }
+            case 0xFFFFF00C: {
+                ushort bits = cast(ushort) bp2Addr.getBits(16, 32);
+                bits.maskWithRef(value, outMask);
+                bp2Addr.setBits(16, 32, bits);
+                break;
+            }
+            case 0xFFFFF00E: {
+                ushort bits = cast(ushort) bp3Addr.getBits(0, 16);
+                bits.maskWithRef(value, outMask);
+                bp3Addr.setBits(0, 16, bits);
+                break;
+            }
+            case 0xFFFFF010: {
+                ushort bits = cast(ushort) bp3Addr.getBits(16, 32);
+                bits.maskWithRef(value, outMask);
+                bp3Addr.setBits(16, 32, bits);
+                break;
+            }
+            case 0xFFFFF012: {
+                ushort bits = cast(ushort) bpAddr.getBits(0, 16);
+                bits.maskWithRef(value, outMask);
+                bpAddr.setBits(0, 16, bits);
+                break;
+            }
+            case 0xFFFFF014: {
+                ushort bits = cast(ushort) bpAddr.getBits(16, 32);
+                bits.maskWithRef(value, outMask);
+                bpAddr.setBits(16, 32, bits);
+                break;
+            }
             default: break;
         }
     }
@@ -116,12 +219,16 @@ public:
         }
 
         ushort value = 0;
-        if (addr >= 0x00000000 && addr <= 0x000FFFFF) value = rom[addr%romSize]; // ROM
-        else if (addr >= 0xD0000000 && addr <= 0xD000FFFF) value = stack[addr%stackSize]; // Stack
-        else if (addr >= 0x10000000 && addr <= 0x8FFFFFFF) value = heap[addr%heapSize]; // Heap
-        else if (addr >= 0xFFFF1000 && addr <= 0xFFFF100F) value = fastMem[addr%16]; // Fast memory
+        uint realAddr = addr >> 1;
+        if (addr >= 0x00000000 && addr <= 0x000FFFFF) value = rom[realAddr%romSize]; // ROM
+        else if (addr >= 0xD0000000 && addr <= 0xD000FFFF) value = stack[realAddr%stackSize]; // Stack
+        else if (addr >= 0x10000000 && addr <= 0x8FFFFFFF) value = heap[realAddr%heapSize]; // Heap
+        else if (addr >= 0xFFFF1000 && addr <= 0xFFFF101F) value = fastMem[realAddr%16]; // Fast memory
 
         log(format("*%08X -> %04X", addr, value));
+
+        if ((addr & 0x1) == 0x1)
+            value = ((value & 0x00FF) << 8) | ((value & 0xFF00) >> 8);
 
         return value;
     }
@@ -177,28 +284,4 @@ public:
     bool stopFlag;
     uint lastEmulatorBP;
     bool emulatorBPRW;
-
-
-} unittest
-{
-    import std.format : format;
-    auto ram = new RAM("main.mif", function void(string) {return;});
-    assert(ram.memRead(0) == 0x0805);
-    assert(ram.memRead(1) == 0x0001);
-    assert(ram.memRead(2) == 0xFFFF);
-    assert(ram.memRead(3) == 0xF000);
-    assert(ram.memRead(4) == 0x0005);
-    assert(ram.memRead(5) == 0xFFFF);
-    assert(ram.memRead(6) == 0xF002);
-    assert(ram.memRead(7) == 0x0000);
-    assert(ram.memRead(8) == 0x0805);
-    assert(ram.memRead(0xD000FFFF) == 0);
-    foreach (ushort i; 0..15)
-        ram.memWrite(0xD000FFFF-i, i);
-    foreach (ushort i; 0..15)
-        assert(ram.memRead(0xD000FFFF-i) == i);
-    foreach (ushort i; 0..15)
-        ram.memWrite(0xD000FFFF-i, cast(ushort) (2*i+1));
-    foreach (ushort i; 0..15)
-        assert(ram.memRead(0xD000FFFF-i) == 2*i+1);
 }

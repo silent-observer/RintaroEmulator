@@ -104,7 +104,7 @@ void main(string[] args)
                 uint startAddr = cmd[1].getInt;
                 uint endAddr = startAddr;
                 if (cmd.length == 3) endAddr = cmd[2].getInt;
-                for (uint i = startAddr; i <= endAddr; i++)
+                for (uint i = startAddr; i <= endAddr; i += 2)
                     ram.memRead(i);
                 break;
             }
@@ -119,24 +119,24 @@ void main(string[] args)
                 uint endAddr = startAddr;
                 ushort data = cast(ushort) cmd[$-1].getInt;
                 if (cmd.length == 4) endAddr = cmd[2].getInt;
-                for (uint i = startAddr; i <= endAddr; i++)
+                for (uint i = startAddr; i <= endAddr; i += 2)
                     ram.memWrite(i, data);
                 break;
             }
 
             case "stack": {
                 isLogging = false;
-                uint endAddr = rcpu.sp < 0xFFE0 ? 0xD000001F + rcpu.sp : 0xD000FFFF;
-                for (uint i = 0xD0000000 + rcpu.sp; i <= endAddr; i++) {
+                uint endAddr = rcpu.sp < 0xFFE0 ? 0xD000001E + rcpu.sp : 0xD000FFFE;
+                for (uint i = 0xD0000000 + rcpu.sp; i <= endAddr; i += 2) {
                     writef("%08X: %04X", i, ram.memRead(i));
-                    if ((i & 0xFFFF) == rcpu.fp - 2) writef(" <- [-2]");
-                    else if ((i & 0xFFFF) == rcpu.fp - 1) writef(" <- [-1]");
+                    if ((i & 0xFFFF) == rcpu.fp - 2) writef(" <- [-4]");
+                    else if ((i & 0xFFFF) == rcpu.fp - 1) writef(" <- [-2]");
                     else if ((i & 0xFFFF) == rcpu.fp + 0) writef(" <- FP");
-                    else if ((i & 0xFFFF) == rcpu.fp + 1) writef(" <- [1]");
-                    else if ((i & 0xFFFF) == rcpu.fp + 2) writef(" <- [2]");
-                    else if ((i & 0xFFFF) == rcpu.fp + 3) writef(" <- [3]");
-                    else if ((i & 0xFFFF) == rcpu.fp + 4) writef(" <- [4]");
-                    else if ((i & 0xFFFF) == rcpu.fp + 5) writef(" <- [5]");
+                    else if ((i & 0xFFFF) == rcpu.fp + 1) writef(" <- [2]");
+                    else if ((i & 0xFFFF) == rcpu.fp + 2) writef(" <- [4]");
+                    else if ((i & 0xFFFF) == rcpu.fp + 3) writef(" <- [6]");
+                    else if ((i & 0xFFFF) == rcpu.fp + 4) writef(" <- [8]");
+                    else if ((i & 0xFFFF) == rcpu.fp + 5) writef(" <- [10]");
                     if ((i & 0xFFFF) == rcpu.sp.value) writef(" <- SP");
                     writeln();
                 }

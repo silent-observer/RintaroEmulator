@@ -128,3 +128,36 @@ if (isIntegral!T) {
     assert((0x0334).signedExtend(ushort)(11) == 0x0334);
     assert((0x0734).signedExtend(ushort)(11) == 0xFF34);
 }
+
+public ushort maskWith(ushort prevValue, ushort value, ubyte mask) {
+    if (mask == 0x1)
+        return cast(ushort) (value | (prevValue & 0xFF00));
+    else if (mask == 0x2)
+        return cast(ushort) ((value << 8) | (prevValue & 0x00FF));
+    else
+        return value;
+} unittest
+{
+    assert((0x1234).maskWith(0x0056, 0x1) == 0x1256);
+    assert((0x1234).maskWith(0x0056, 0x2) == 0x5634);
+    assert((0x1234).maskWith(0x0056, 0x3) == 0x0056);
+}
+
+public ushort maskWithRef(ref ushort prevValue, ushort value, ubyte mask) {
+    if (mask == 0x1)
+        prevValue = cast(ushort) (value | (prevValue & 0xFF00));
+    else if (mask == 0x2)
+        prevValue = cast(ushort) ((value << 8) | (prevValue & 0x00FF));
+    else
+        prevValue = value;
+    return prevValue;
+} unittest
+{
+    ushort reg = 0x1234
+    reg.maskWithRef(0x0056, 0x1)
+    assert(reg == 0x1256);
+    reg.maskWithRef(0x0078, 0x2)
+    assert(reg == 0x7856);
+    reg.maskWithRef(0x009A, 0x3)
+    assert(reg == 0x009A);
+}

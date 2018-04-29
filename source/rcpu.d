@@ -37,8 +37,8 @@ public:
         a = 0;
         b = 0;
         c = 0;
-        sp = 0xFFFF;
-        fp = 0xFFFF;
+        sp = 0xFFFE;
+        fp = 0xFFFE;
         pc = 0;
         f = 0;
         ticks = 0;
@@ -65,12 +65,14 @@ public:
             log(format("Interrupted to %08X with %02X", interruptAddr, interruptData));
             return;
         }
-        auto opcode = memRead(pc++);
+        auto opcode = memRead(pc);
+        pc += 2;
         ticks++;
         Instruction instr = decodeInstruction(opcode);
-        log(format("%s -- %s", instr, ram.getComments(pc-1)));
+        log(format("%s -- %s", instr, ram.getComments((pc>>1)-1)));
         final switch (instr.type) {
             case InstructionType.a: executeAType(instr); break;
+            case InstructionType.m8: executeM8Type(instr); break;
             case InstructionType.j: executeJType(instr); break;
             case InstructionType.jr: executeJRType(instr); break;
             case InstructionType.i: executeIType(instr); break;
@@ -92,8 +94,8 @@ private:
         a = Register!16();
         b = Register!16();
         c = Register!16();
-        sp = Register!16(0xFFFF);
-        fp = Register!16(0xFFFF);
+        sp = Register!16(0xFFFE);
+        fp = Register!16(0xFFFE);
         pc = Register!32();
         f = FlagRegister();
         alu = new ALU;
@@ -101,26 +103,34 @@ private:
     }
 
     void execInterrupt(uint address, ubyte data) {
-        memWrite(0xD0000000 | sp--, cast(ushort) (pc >> 16));
-        memWrite(0xD0000000 | sp--, cast(ushort) (pc & 0xFFFF));
-        memWrite(0xD0000000 | sp--, fp);
-        memWrite(0xD0000000 | sp--, f);
-        memWrite(0xD0000000 | sp--, data);
-        memWrite(0xD0000000 | sp--, c);
-        memWrite(0xD0000000 | sp--, b);
-        memWrite(0xD0000000 | sp--, a);
+        memWrite(0xD0000000 | sp, cast(ushort) (pc >> 16));
+        sp -= 2;
+        memWrite(0xD0000000 | sp, cast(ushort) (pc & 0xFFFF));
+        sp -= 2;
+        memWrite(0xD0000000 | sp, fp);
+        sp -= 2;
+        memWrite(0xD0000000 | sp, f);
+        sp -= 2;
+        memWrite(0xD0000000 | sp, data);
+        sp -= 2;
+        memWrite(0xD0000000 | sp, c);
+        sp -= 2;
+        memWrite(0xD0000000 | sp, b);
+        sp -= 2;
+        memWrite(0xD0000000 | sp, a);
+        sp -= 2;
         fp = sp;
         pc = address;
         ticks += 9;
     }
 
     ushort memRead (uint addr) {
-        if (addr == 0xFFFF100F) return sp;
+        if (addr == 0xFFFF101E) return sp;
         else return ram.memRead(addr);
     }
-    void memWrite (uint addr, ushort value) {
-        if (addr == 0xFFFF100F) sp = value;
-        else ram.memWrite(addr, value);
+    void memWrite (uint addr, ushort value, ubyte inMask = 0x3, ubyte outMask = 0x3) {
+        if (addr == 0xFFFF101E) sp = value;
+        else ram.memWrite(addr, value, inMask, outMask);
     }
 
     LogCallback log;
@@ -133,16 +143,25 @@ private:
             case 1: return a;
             case 2: return b;
             case 3: return c;
-            case 4: ticks++; return memRead(pc++);
+            case 4: {
+                ticks++;
+                ushort res = memRead(pc);
+                pc += 2;
+                return res;
+
+            }
             case 5: {
-                uint addr = memRead(pc++) << 16;
-                addr |= memRead(pc++);
+                uint addr = memRead(pc) << 16;
+                pc += 2;
+                addr |= memRead(pc);
+                pc += 2;
                 ticks += 3;
                 return memRead(addr);
             }
             case 6: ticks++; return memRead((ram.pageReg<<16) | a);
             case 7: {
-                uint addr = 0xD0000000 | ((fp + memRead(pc++)) & 0xFFFF);
+                uint addr = 0xD0000000 | ((fp + memRead(pc)) & 0xFFFF);
+                pc += 2;
                 ticks += 2;
                 return memRead(addr);
             }
@@ -150,24 +169,41 @@ private:
         }
     }
 
-    void setValue(ushort addrMode, ushort value, bool isIType = false) {
+    void setValue(ushort addrMode, ushort value, bool isIType = false
+                , ubyte inMask = 0x3, ubyte outMask = 0x3) {
         switch (addrMode) {
             case 0: if(isIType) sp = value; break;
-            case 1: a = value; break;
-            case 2: b = value; break;
-            case 3: c = value; break;
+            case 1: case 2: case 3: {
+                if (inMask == 0x1)
+                    value = value & 0x00FF;
+                else if (inMask == 0x2)
+                    value = value >> 8;
+                ushort prevValue =  addrMode == 1? a :
+                                    addrMode == 2? b : c;
+                prevValue.maskWithRef(value, outMask);
+                if (addrMode == 1)
+                    a = prevValue;
+                else if (addrMode == 2)
+                    b = prevValue;
+                else
+                    c = prevValue;
+                break;
+            }
             case 4: break;
             case 5: {
-                uint addr = memRead(pc++) << 16;
-                addr |= memRead(pc++);
-                memWrite(addr, value);
+                uint addr = memRead(pc) << 16;
+                pc += 2;
+                addr |= memRead(pc);
+                pc += 2;
+                memWrite(addr, value, inMask, outMask);
                 ticks += 3;
                 break;
             }
-            case 6: ticks++; memWrite((ram.pageReg<<16) | a, value); break;
+            case 6: ticks++; memWrite((ram.pageReg<<16) | a, value, inMask, outMask); break;
             case 7: {
-                uint addr = 0xD0000000 | ((fp + memRead(pc++)) & 0xFFFF);
-                memWrite(addr, value);
+                uint addr = 0xD0000000 | ((fp + memRead(pc)) & 0xFFFF);
+                pc += 2;
+                memWrite(addr, value, inMask, outMask);
                 ticks += 2;
                 break;
             }
@@ -186,14 +222,26 @@ private:
             a = cast(ushort) (result >> 16);
     }
 
+    void executeM8Type(Instruction instr) {
+        ushort a1 = getValue(instr.a1);
+        bool highIn = (instr.opcode & 0x2) == 0x1;
+        bool highOut = (instr.opcode & 0x1) == 0x1;
+        setValue(instr.a2, cast(ushort) (a1 & 0xFFFF), false, highIn? 0x2:0x1, highOut? 0x2:0x1);
+        f.c = false;
+        f.n = (a1 & 0x80) == 0x80;
+        f.z = (a1 & 0xFF) == 0;
+        f.v = false;
+        ticks++;
+    }
+
     void executeJType(Instruction instr) {
-        pc += cast(short) instr.a1;
+        pc += cast(int) (cast(short) instr.a1) << 1;
         ticks++;
     }
 
     void executeJRType(Instruction instr) {
         short a1 = getValue(instr.a1);
-        pc = (pc.value.getBits(15, 32) << 15) | (instr.a1.getBits(0, 15));
+        pc = (pc.value.getBits(17, 32) << 17) | (instr.a1 << 1);
         ticks++;
     }
 
@@ -217,7 +265,7 @@ private:
 
     void executeFType(Instruction instr) {
         if (f.value.getBit(instr.a1) == instr.opcode) {
-            pc += cast(byte) instr.a2;
+            pc += cast(int)(cast(byte) instr.a2) << 1;
             ticks++;
         }
     }
@@ -225,36 +273,44 @@ private:
     void executeLSType(Instruction instr) {
         ticks++;
         if (instr.opcode == 0) {
-            ushort value = memRead(0xFFFF1000 | instr.a2);
+            ushort value = memRead(0xFFFF1000 | (instr.a2 << 1));
             setValue(instr.a1, value);
         } else {
             ushort value = getValue(instr.a1);
-            memWrite(0xFFFF1000 | instr.a2, value);
+            memWrite(0xFFFF1000 | (instr.a2 << 1), value);
         }
     }
 
     void executeSPType(Instruction instr) {
         if (instr.opcode == 0) { // PUSH
             ushort value = getValue(instr.a1);
-            memWrite(0xD0000000 | sp--, value);
+            memWrite(0xD0000000 | sp, value);
+            sp -= 2;
             ticks += 2;
         }
         else if (instr.opcode == 1) { // POP
-            ushort value = memRead(0xD0000000 | ++sp);
+            sp += 2;
+            ushort value = memRead(0xD0000000 | sp);
             setValue(instr.a1, value);
             ticks += 2;
         }
         else if (instr.opcode == 2) { // SVPC
-            memWrite(0xD0000000 | sp--, cast(ushort) (pc >> 16));
-            memWrite(0xD0000000 | sp--, cast(ushort) ((pc+1) & 0xFFFF));
-            memWrite(0xD0000000 | sp--, fp);
+            memWrite(0xD0000000 | sp, cast(ushort) (pc >> 16));
+            sp -= 2;
+            memWrite(0xD0000000 | sp, cast(ushort) ((pc+2) & 0xFFFF));
+            sp -= 2;
+            memWrite(0xD0000000 | sp, fp);
+            sp -= 2;
             fp = sp;
             ticks += 4;
         }
         else { // RET
-            fp = memRead(0xD0000000 | ++sp);
-            pc = memRead(0xD0000000 | ++sp);
-            pc |= memRead(0xD0000000 | ++sp) << 16;
+            sp += 2;
+            fp = memRead(0xD0000000 | sp);
+            sp += 2;
+            pc = memRead(0xD0000000 | sp);
+            sp += 2;
+            pc |= memRead(0xD0000000 | sp) << 16;
             ticks += 3;
         }
     }

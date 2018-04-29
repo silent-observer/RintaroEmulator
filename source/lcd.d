@@ -34,7 +34,7 @@ public:
             if (x.getBit(2)) {
                 text[row][col++] = cast(char) data.value;
                 if (col == 20) {
-                    col = 0; 
+                    col = 0;
                     if (row < 2) row += 2;
                     else if (row == 2) row = 1;
                     else if (row == 3) row = 0;
