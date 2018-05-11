@@ -151,9 +151,9 @@ private:
 
             }
             case 5: {
-                uint addr = memRead(pc) << 16;
+                uint addr = memRead(pc);
                 pc += 2;
-                addr |= memRead(pc);
+                addr |= memRead(pc) << 16;
                 pc += 2;
                 ticks += 3;
                 return memRead(addr);
@@ -191,9 +191,9 @@ private:
             }
             case 4: break;
             case 5: {
-                uint addr = memRead(pc) << 16;
+                uint addr = memRead(pc);
                 pc += 2;
-                addr |= memRead(pc);
+                addr |= memRead(pc) << 16;
                 pc += 2;
                 memWrite(addr, value, inMask, outMask);
                 ticks += 3;
